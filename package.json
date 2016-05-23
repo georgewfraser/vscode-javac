@@ -14,7 +14,8 @@
     },
     "categories": [
         "Languages",
-        "Linters"
+        "Linters",
+        "Debuggers"
     ],
     "keywords": [
         "java"
@@ -49,7 +50,63 @@
                 "fileMatch": "javaconfig.json",
                 "url": "./lib/javaconfig.schema.json"
             }
+        ],
+    "debuggers": [
+      {
+        "type": "java",
+        "label": "Java",
+        "enableBreakpointsFor": {
+          "languageIds": [
+            "java"
+          ]
+        },
+        "program": "./out/lib/debugger/main.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program",
+              "jdkPath"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Absolute path to the program.",
+                "default": "${file}"
+              },
+              "jdkPath": {
+                "type": "string",
+                "description": "Path JDK directory.",
+                "default": ""
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Automatically stop after launch.",
+                "default": true
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [],
+                "description": "Options to be passed to the java executable (java)."
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "name": "Java",
+            "type": "java",
+            "request": "launch",
+            "stopOnEntry": true,
+            "program": "${file}",
+            "options": []
+          }
         ]
+      }
+    ]
     },
     "scripts": {
         "vscode:prepublish": "node ./node_modules/vscode/bin/compile",
@@ -59,7 +116,10 @@
     },
     "dependencies": {
         "portfinder": "^0.4.0",
-        "split": "^1.0.0"
+        "split": "^1.0.0",
+        "get-port": "^2.1.0",
+        "vscode-debugadapter": "^1.8.0",
+        "vscode-debugprotocol": "^1.8.0"
     },
     "devDependencies": {
         "typescript": "^1.8.5",
