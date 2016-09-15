@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -80,12 +81,12 @@ class JavaLanguageServer implements LanguageServer {
 
         result.setCapabilities(c);
 
-        LanguageDescriptionImpl java = new LanguageDescriptionImpl();
-
-        java.setLanguageId("java");
-        java.setFileExtensions(Collections.singletonList(".java"));
-
-        result.setSupportedLanguages(Collections.singletonList(java));
+//        LanguageDescriptionImpl java = new LanguageDescriptionImpl();
+//
+//        java.setLanguageId("java");
+//        java.setFileExtensions(Collections.singletonList(".java"));
+//
+//        result.setSupportedLanguages(Collections.singletonList(java));
 
         return CompletableFuture.completedFuture(result);
     }
@@ -534,10 +535,107 @@ class JavaLanguageServer implements LanguageServer {
             JavacConfig config = new JavacConfig(sourcePath, classPath, outputDirectory);
 
             return Optional.of(config);
+        }else if(Files.exists(dir.resolve("build.sbt"))){
+            LOG.info("Resolving SBT builds");
+            Path sbtFile = dir.resolve("build.sbt");
+
+            // Invoke sbt "show compile:fullClasspath"
+            Set<Path> classPath = buildSBTClassPath(sbtFile);
+            LOG.info("classPath is "+classPath);
+
+            // Get source directory from build.sbt , using sbt "show sourceDirectories"
+            Set<Path> sourcePath = sourceSBTDirectories(sbtFile);
+            LOG.info("sourcePath is "+classPath);
+
+            // Use target/javacs
+            Path outputDirectory = Paths.get("target/javacs").toAbsolutePath();
+
+            JavacConfig config = new JavacConfig(sourcePath, classPath, outputDirectory);
+
+            return Optional.of(config);
         }
         // TODO add more file types
         else {
             return Optional.empty();
+        }
+    }
+
+    static Set<Path> buildSBTClassPath(Path buildSBT) {
+         try {
+            Objects.requireNonNull(buildSBT, "build.sbt path is null");
+            String cmd ="sbt show \"compile:fullClasspath\"";
+            File workingDirectory = buildSBT.toAbsolutePath().getParent().toFile();
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "/opt/sbt/bin/sbt",
+                    "show test:fullClasspath"
+            );
+
+            Process proc = processBuilder
+                .directory(workingDirectory)
+                .start();
+                
+            int result = proc.waitFor();
+            if (result != 0)
+                throw new RuntimeException("`" + cmd + "` returned " + result);
+
+            try(BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()))){
+                String tmp;
+                while((tmp = reader.readLine()) != null){
+                    if(tmp.contains("Attributed")){
+                        String t = tmp.substring(tmp.indexOf("Attributed("), tmp.lastIndexOf(")"));
+                        return Arrays.stream(t.split(","))
+                         .map(c->c.replace("Attributed(","").replace(")","").trim())
+                         .map(buildSBT::resolve)
+                         .collect(Collectors.toSet());
+                    }
+                }
+            }finally{
+                proc.destroy();
+            }            
+            return new HashSet<Path>();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static Set<Path> sourceSBTDirectories(Path buildSBT) {
+        try {
+            Objects.requireNonNull(buildSBT, "build.sbt path is null");
+            String cmd ="sbt show \"compile:fullClasspath\"";
+            File workingDirectory = buildSBT.toAbsolutePath().getParent().toFile();
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "/opt/sbt/bin/sbt",
+                    ";show sourceDirectories;test:sourceDirectories"
+            );
+
+            Process proc = processBuilder
+                .directory(workingDirectory)
+                .start();
+                
+            int result = proc.waitFor();
+            if (result != 0)
+                throw new RuntimeException("`" + cmd + "` returned " + result);
+
+            HashSet<Path> sources = new HashSet<>();
+            try(BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()))){
+                String tmp;
+                while((tmp = reader.readLine()) != null){
+                    if(tmp.contains("List(")){
+                        String t = tmp.substring(tmp.indexOf("List("), tmp.lastIndexOf(")"));
+                        sources.addAll(
+                            Arrays.stream(t.split(","))
+                            .map(c->c.trim())
+                            .map(buildSBT::resolve)
+                            .collect(Collectors.toSet())
+                        );
+                    }
+                }
+            }finally{
+                proc.destroy();
+            }            
+            return sources;
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
