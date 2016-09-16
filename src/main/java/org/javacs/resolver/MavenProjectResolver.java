@@ -23,11 +23,16 @@ public class MavenProjectResolver implements JavaProjectResolver {
 
     private Path baseDirectory;
     private Path projectFile;
+    private String command;
 
     @Override
     public JavaProjectResolver init(Path baseDirectory, Path projectFile) {
         this.baseDirectory = baseDirectory;
         this.projectFile = projectFile;
+        this.command = new CommandFinder("cmd","cmd.cmd","cmd.bat").findCommand();
+        if(this.command == null || this.command.length() == 0){
+            throw new RuntimeException("Maven could not be found in the classpath");
+        }
         return this;
     }
 
@@ -39,7 +44,7 @@ public class MavenProjectResolver implements JavaProjectResolver {
 
             LOG.info("Emit classpath to " + classPathTxt);
 
-            String cmd = "mvn dependency:build-classpath -Dmdep.outputFile=" + classPathTxt;
+            String cmd = command +" dependency:build-classpath -Dmdep.outputFile=" + classPathTxt;
             File workingDirectory = projectFile.toAbsolutePath().getParent().toFile();
             int result = Runtime.getRuntime().exec(cmd, null, workingDirectory).waitFor();
             if (result != 0)

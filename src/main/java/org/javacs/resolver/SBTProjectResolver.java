@@ -25,7 +25,7 @@ public class SBTProjectResolver implements JavaProjectResolver {
 
         File workingDirectory = projectFile.toAbsolutePath().getParent().toFile();
         String[] cmds = new String[]{
-                "/opt/sbt/bin/sbt",
+                new CommandFinder("sbt","sbt.bat","sbt.cmd").findCommand(),
                 ";show sourceDirectories;test:sourceDirectories;printWarnings;show test:fullClasspath"
         };
 
