@@ -4,6 +4,7 @@ import com.sun.tools.javac.code.Symbol;
 import io.typefox.lsapi.*;
 import javax.tools.*;
 import com.sun.tools.javac.tree.*;
+import org.javacs.resolver.MavenProjectResolver;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -119,7 +120,11 @@ public class SymbolIndexTest {
         return index.search(query).map(s -> s.getName()).collect(Collectors.toSet());
     }
 
-    private static Set<Path> classPath = JavaLanguageServer.buildClassPath(Paths.get("pom.xml"));
+    private static Set<Path> classPath = new MavenProjectResolver().init(
+            Paths.get("./"),
+            Paths.get("pom.xml")
+    ).resolveClassPath();
+
     private SymbolIndex index = getIndex();
     
     private static SymbolIndex getIndex() {
