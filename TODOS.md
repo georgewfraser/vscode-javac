@@ -8,6 +8,7 @@
 * Autocomplete annotation fields
 * Autocomplete enum options in switch statement
 * Hover shows javadoc if available
+* Hover show FQ types if not imported
 * Javadoc path for hover, autocomplete
 
 ## Features 

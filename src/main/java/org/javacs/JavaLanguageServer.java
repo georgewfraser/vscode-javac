@@ -9,6 +9,7 @@ import io.typefox.lsapi.impl.*;
 import javax.tools.*;
 import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -17,6 +18,11 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import javax.xml.parsers.*;
+import javax.xml.xpath.*;
+import org.w3c.dom.*;
+import org.xml.sax.SAXException;
 
 import static org.javacs.Main.JSON;
 
@@ -46,7 +52,7 @@ class JavaLanguageServer implements LanguageServer {
         }
         else {
             LOG.log(Level.SEVERE, message, error);
-
+            
             MessageParamsImpl m = new MessageParamsImpl();
 
             m.setMessage(message);
@@ -73,7 +79,7 @@ class JavaLanguageServer implements LanguageServer {
         c.setDocumentSymbolProvider(true);
 
         result.setCapabilities(c);
-        
+
         return CompletableFuture.completedFuture(result);
     }
 
@@ -218,7 +224,7 @@ class JavaLanguageServer implements LanguageServer {
                 if (path.isPresent()) {
                     JavacHolder compiler = findCompiler(path.get());
                     JavaFileObject file = findFile(compiler, path.get());
-
+                    
                     // Remove from source cache
                     sourceByPath.remove(path.get());
                 }
@@ -323,7 +329,7 @@ class JavaLanguageServer implements LanguageServer {
 
             @Override
             public void didChangeConfiguraton(DidChangeConfigurationParams params) {
-
+                
             }
 
             @Override
@@ -370,12 +376,12 @@ class JavaLanguageServer implements LanguageServer {
             }
         };
     }
-
+    
     private void publishDiagnostics(Collection<Path> paths, DiagnosticCollector<JavaFileObject> errors) {
         Map<URI, PublishDiagnosticsParamsImpl> files = new HashMap<>();
-
+        
         paths.forEach(p -> files.put(p.toUri(), newPublishDiagnostics(p.toUri())));
-
+        
         errors.getDiagnostics().forEach(error -> {
             if (error.getStartPosition() != javax.tools.Diagnostic.NOPOS) {
                 URI uri = error.getSource().toUri();
@@ -437,11 +443,11 @@ class JavaLanguageServer implements LanguageServer {
 
         Path dir = path.getParent();
         Optional<JavacConfig> config = findConfig(dir);
-
+        
         // If config source path doesn't contain source file, then source file has no config
         if (config.isPresent() && !config.get().sourcePath.stream().anyMatch(s -> path.startsWith(s)))
             throw new NoJavaConfigException(path.getFileName() + " is not on the source path");
-
+        
         Optional<JavacHolder> maybeHolder = config.map(c -> compilerCache.computeIfAbsent(c, this::newJavac));
 
         return maybeHolder.orElseThrow(() -> new NoJavaConfigException(path));
@@ -729,7 +735,7 @@ class JavaLanguageServer implements LanguageServer {
             throw ShowMessageException.error(e.getMessage(), e);
         }
     }
-
+    
     public HoverImpl doHover(TextDocumentPositionParams position) {
         HoverImpl result = new HoverImpl();
         List<MarkedStringImpl> contents = new ArrayList<>();
@@ -746,7 +752,7 @@ class JavaLanguageServer implements LanguageServer {
             );
             if (found.isPresent()) {
                 Symbol symbol = found.get();
-
+                
                 switch (symbol.getKind()) {
                     case PACKAGE:
                         contents.add(markedString("package " + symbol.getQualifiedName()));
@@ -775,7 +781,7 @@ class JavaLanguageServer implements LanguageServer {
                         Symbol.MethodSymbol method = (Symbol.MethodSymbol) symbol;
                         String signature = AutocompleteVisitor.methodSignature(method);
                         String returnType = ShortTypePrinter.print(method.getReturnType());
-
+                        
                         contents.add(markedString(returnType + " " + signature));
 
                         break;
@@ -794,7 +800,7 @@ class JavaLanguageServer implements LanguageServer {
                 }
             }
         }
-
+        
         return result;
     }
 
