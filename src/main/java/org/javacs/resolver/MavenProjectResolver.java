@@ -29,7 +29,7 @@ public class MavenProjectResolver implements JavaProjectResolver {
     public JavaProjectResolver init(Path baseDirectory, Path projectFile) {
         this.baseDirectory = baseDirectory;
         this.projectFile = projectFile;
-        this.command = new CommandFinder("cmd","cmd.cmd","cmd.bat").findCommand();
+        this.command = new CommandFinder("mvn","mvn.cmd","mvn.bat").findCommand();
         if(this.command == null || this.command.length() == 0){
             throw new RuntimeException("Maven could not be found in the classpath");
         }

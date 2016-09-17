@@ -16,24 +16,25 @@ public class CommandFinder {
     }
 
     String findCommand() {
-        Stream<String> path = Arrays.stream(System.getenv("PATH").split(File.pathSeparator));
-        Stream<String> cmdResult;
+        Stream<String> cmdResult = Arrays.stream(cmds);
+
         if (OS.indexOf("win") != -1) {
             cmdResult = Arrays.stream(cmds)
                     .filter(c -> c.endsWith(".cmd") || c.endsWith(".bat"));
-        } else {
-            cmdResult = Arrays.stream(cmds)
-                    .filter(c -> !c.endsWith(".cmd") && !c.endsWith(".bat"));
-        }
-        List<String> cs = cmdResult.collect(Collectors.toList());
-        for (String c : cs) {
-            Optional<File> result =
-                    path.map(p -> new File(p, c))
-                            .filter(p -> p.isFile() && p.canExecute()).findFirst();
-            if (result.isPresent()) {
-                return result.get().getAbsolutePath();
-            }
-        }
+        }        
+
+        Optional<File> cmd = cmdResult
+            .map(c-> Arrays.stream(System.getenv("PATH")
+                        .split(File.pathSeparator))
+                        .map(p->new File(p, c))
+                        .filter(p -> p.isFile() && p.canExecute())
+            )
+            .flatMap(c->c)
+            .findFirst();
+
+        if(cmd.isPresent())
+            return cmd.get().getAbsolutePath();
+
         return null;
     }
 }

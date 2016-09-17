@@ -15,9 +15,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Created by jgar on 9/16/16.
- */
 class ClassPathFileReader {
     private Path classPathFilePath;
 
