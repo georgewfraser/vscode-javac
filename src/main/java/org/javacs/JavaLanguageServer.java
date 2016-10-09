@@ -500,155 +500,16 @@ class JavaLanguageServer implements LanguageServer {
      * If directory contains a config file, for example javaconfig.json or an eclipse project file, read it.
      */
     public Optional<JavacConfig> readIfConfig(Path dir) {
-        if (Files.exists(dir.resolve("javaconfig.json"))) {
-            JavaConfigJson json = readJavaConfigJson(dir.resolve("javaconfig.json"));
-            Set<Path> classPath = json.classPathFile.map(classPathFile -> {
-                Path classPathFilePath = dir.resolve(classPathFile);
-                return readClassPathFile(classPathFilePath);
-            }).orElse(Collections.emptySet());
-            Set<Path> sourcePath = json.sourcePath.stream().map(dir::resolve).collect(Collectors.toSet());
-            Path outputDirectory = dir.resolve(json.outputDirectory);
-            JavacConfig config = new JavacConfig(sourcePath, classPath, outputDirectory);
-
-            return Optional.of(config);
-        }
-        else if (Files.exists(dir.resolve("pom.xml"))) {
-            Path pomXml = dir.resolve("pom.xml");
-
-            // Invoke maven to get classpath
-            Set<Path> classPath = buildClassPath(pomXml);
-
-            // Get source directory from pom.xml
-            Set<Path> sourcePath = sourceDirectories(pomXml);
-
-            // Use target/javacs
-            Path outputDirectory = Paths.get("target/javacs").toAbsolutePath();
-
-            JavacConfig config = new JavacConfig(sourcePath, classPath, outputDirectory);
-
-            return Optional.of(config);
-        }
-        // TODO add more file types
-        else {
+        Optional<JavaProjectResolver> projectResolver = JavaProjectResolverLocator.findResolver(dir);
+        if(!projectResolver.isPresent()){
             return Optional.empty();
         }
-    }
 
-    public static Set<Path> buildClassPath(Path pomXml) {
-        try {
-            Objects.requireNonNull(pomXml, "pom.xml path is null");
-
-            // Tell maven to output classpath to a temporary file
-            // TODO if pom.xml already specifies outputFile, use that location
-            Path classPathTxt = Files.createTempFile("classpath", ".txt");
-
-            LOG.info("Emit classpath to " + classPathTxt);
-
-            String cmd = getMvnCommand() + " dependency:build-classpath -Dmdep.outputFile=" + classPathTxt;
-            File workingDirectory = pomXml.toAbsolutePath().getParent().toFile();
-            int result = Runtime.getRuntime().exec(cmd, null, workingDirectory).waitFor();
-
-            if (result != 0)
-                throw new RuntimeException("`" + cmd + "` returned " + result);
-
-            return readClassPathFile(classPathTxt);
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static String getMvnCommand() {
-        String mvnCommand = "mvn";
-        if (File.separatorChar == '\\') {
-            mvnCommand = findExecutableOnPath("mvn.cmd");
-            if (mvnCommand == null) {
-                mvnCommand = findExecutableOnPath("mvn.bat");
-            }
-        }
-        return mvnCommand;
-    }
-
-    public static String findExecutableOnPath(String name) {
-        for (String dirname : System.getenv("PATH").split(File.pathSeparator)) {
-            File file = new File(dirname, name);
-            if (file.isFile() && file.canExecute()) {
-                return file.getAbsolutePath();
-            }
-        }
-        return null;
-    }
-
-    public static Set<Path> sourceDirectories(Path pomXml) {
-        try {
-            Set<Path> all = new HashSet<>();
-
-            // Parse pom.xml
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(pomXml.toFile());
-
-            // Find source directory
-            String sourceDir = XPathFactory.newInstance().newXPath().compile("/project/build/sourceDirectory").evaluate(doc);
-
-            if (sourceDir == null || sourceDir.isEmpty()) {
-                LOG.info("Use default source directory src/main/java");
-
-                sourceDir = "src/main/java";
-            }
-            else LOG.info("Use source directory from pom.xml " + sourceDir);
-            
-            all.add(pomXml.resolveSibling(sourceDir).toAbsolutePath());
-
-            // Find test directory
-            String testDir = XPathFactory.newInstance().newXPath().compile("/project/build/testSourceDirectory").evaluate(doc);
-
-            if (testDir == null || testDir.isEmpty()) {
-                LOG.info("Use default test directory src/test/java");
-
-                testDir = "src/test/java";
-            }
-            else LOG.info("Use test directory from pom.xml " + testDir);
-            
-            all.add(pomXml.resolveSibling(testDir).toAbsolutePath());
-
-            return all;
-        } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private JavaConfigJson readJavaConfigJson(Path configFile) {
-        try {
-            return JSON.readValue(configFile.toFile(), JavaConfigJson.class);
-        } catch (IOException e) {
-            MessageParamsImpl message = new MessageParamsImpl();
-
-            message.setMessage("Error reading " + configFile);
-            message.setType(MessageType.Error);
-
-            throw new ShowMessageException(message, e);
-        }
-    }
-
-    private static Set<Path> readClassPathFile(Path classPathFilePath) {
-        try {
-            InputStream in = Files.newInputStream(classPathFilePath);
-            String text = new BufferedReader(new InputStreamReader(in))
-                    .lines()
-                    .collect(Collectors.joining());
-            Path dir = classPathFilePath.getParent();
-
-            return Arrays.stream(text.split(File.pathSeparator))
-                         .map(dir::resolve)
-                         .collect(Collectors.toSet());
-        } catch (IOException e) {
-            MessageParamsImpl message = new MessageParamsImpl();
-
-            message.setMessage("Error reading " + classPathFilePath);
-            message.setType(MessageType.Error);
-
-            throw new ShowMessageException(message, e);
-        }
+        return projectResolver.map(p-> new JavacConfig(
+                p.resolveSourcePath(),
+                p.resolveClassPath(),
+                p.resolveOutputPath()
+        ));
     }
 
     public JavaFileObject findFile(JavacHolder compiler, Path path) {
