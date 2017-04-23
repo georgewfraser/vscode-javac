@@ -201,17 +201,33 @@ Then run `gradlew vscode`. This will generate
 
 ### Gradle Android build
 
-For Android gradle project, put the above tasks in the `android` method of your `build.gradle`:
+For Android gradle project, put the above tasks in the `android` block of your `build.gradle`:
 ```gradle
 android {
     ...
-    // add the vscode tasks inside the android method
+    // add the vscode tasks inside the android block
     task vscodeClasspathFile {
     ...    
 }
 ```
 
-Currently, the generated `classpath.txt` does not contain android platform library, e.g., `/opt/android-sdk-linux/platforms/android-23/android.jar`. You would need to add it manually. See issue #23.
+Additional manual fixes to the generated `classpath.txt`:
+1. add android platform library, e.g., `/opt/android-sdk-linux/platforms/android-23/android.jar`. See issue #23.
+2. add libraries embedded in `.aar` files. `javac` will not understand (and ignore) .aar files in `classpath.txt`. You can add the `.jar` files embedded in `.aar` by follows:
+
+```
+# 0. Pre-requsite: You have made a full gradle build
+
+# 1. At project root directory, find the list of jars in the aar files
+find build/intermediates/exploded-aar -name "classes.jar"
+
+# 2. copy the list of jars shown to classpath.txt
+#   (I converted the list from relative path to absoulte path. Unclear if it is necessary)
+```
+
+Remaining issues:
+- The above fixes do not cover the few Android-generated java/class files (found in `build/generated` directory), e.g., `R.java` from resource ids xmls, `BuildConfig.java`, etc.
+
 
 ### SBT (Lightbend Activator)
 
