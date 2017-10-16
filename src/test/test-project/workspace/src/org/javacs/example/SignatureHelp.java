@@ -1,8 +1,9 @@
 package org.javacs.example;
 
-import java.util.concurrent.CompletableFuture; import java.util.ArrayList;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
-class SignatureHelp {
+public class SignatureHelp {
     void test(Runnable r) {
         CompletableFuture.runAsync();
         CompletableFuture.runAsync(r, );

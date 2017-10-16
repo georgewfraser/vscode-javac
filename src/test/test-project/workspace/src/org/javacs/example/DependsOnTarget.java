@@ -1,6 +1,6 @@
 package org.javacs.example;
 
-class DependsOnTarget {
+public class DependsOnTarget {
     static String name() {
         return Target.name();
     }

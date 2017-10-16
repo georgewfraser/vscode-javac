@@ -1,8 +1,6 @@
 package org.javacs.docs;
 
-import java.util.*; 
-
-class TrickyDocstring {
+public class TrickyDocstring {
 
     void test() {
         example("foo", new String[] { "foo" }, null);

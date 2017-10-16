@@ -1,7 +1,7 @@
 package com.example;
 
-class PackagePrivate {
+public class PackagePrivate {
     void packagePrivateMethod() {
-        
+
     }
 }

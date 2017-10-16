@@ -10,6 +10,21 @@
 *.log
 *.log.*
 .idea
-*.iml
 *.vsix
 .DS_store
+
+# User-specific stuff:
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+
+# Gradle:
+.idea/**/gradle.xml
+.idea/**/libraries
+
+## File-based project format:
+*.iws
+*.ipr
+*.iml
+
+out/
+

@@ -2,7 +2,7 @@
 .vscode/**
 .idea/**
 *.iml
-classpath.txt
+public classpath.txt
 tsconfig.json
 tsd.json
 *.xml

@@ -1,6 +1,6 @@
 package org.javacs.example;
 
-class MissingImport {
+public class MissingImport {
     void test() {
         ArrayList foo;
     }

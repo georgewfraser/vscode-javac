@@ -1,6 +1,6 @@
 package org.javacs.docs;
 
-class SuperDoc {
+public class SuperDoc {
     /**
      * An inherited docstring
      */

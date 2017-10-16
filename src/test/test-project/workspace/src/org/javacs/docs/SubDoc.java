@@ -1,8 +1,8 @@
 package org.javacs.docs;
 
-class SubDoc extends SuperDoc implements InterfaceDoc {
+public class SubDoc extends SuperDoc implements InterfaceDoc {
     void method() {
-        
+
     }
 
     public void interfaceMethod() {

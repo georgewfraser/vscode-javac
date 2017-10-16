@@ -1,3 +1,18 @@
+/*
+ * Original work Copyright (c) 2017 George W Fraser.
+ * Modified work Copyright (c) 2017 Palantir Technologies, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ */
+
 package org.javacs;
 
 import java.net.URI;
@@ -6,14 +21,25 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
+import org.eclipse.lsp4j.DidChangeConfigurationParams;
+import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
+import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
-class JavaWorkspaceService implements WorkspaceService {
+public class JavaWorkspaceService implements WorkspaceService {
+
+    private static final Logger LOG = Logger.getLogger("main");
+
     private final CompletableFuture<LanguageClient> client;
     private final JavaLanguageServer server;
     private final JavaTextDocumentService textDocuments;
+
     private JavaSettings settings = new JavaSettings();
 
     JavaWorkspaceService(
@@ -88,5 +114,4 @@ class JavaWorkspaceService implements WorkspaceService {
         textDocuments.doLint(textDocuments.openFiles());
     }
 
-    private static final Logger LOG = Logger.getLogger("main");
 }

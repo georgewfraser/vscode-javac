@@ -1,3 +1,18 @@
+/*
+ * Original work Copyright (c) 2017 George W Fraser.
+ * Modified work Copyright (c) 2017 Palantir Technologies, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ */
+
 package org.javacs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,7 +29,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.logging.Handler;
@@ -24,19 +44,32 @@ import java.util.logging.Logger;
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
-import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.CompletionOptions;
+import org.eclipse.lsp4j.ExecuteCommandOptions;
+import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.MessageType;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.SignatureHelpOptions;
+import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
-class JavaLanguageServer implements LanguageServer {
+public class JavaLanguageServer implements LanguageServer {
+
     private static final Logger LOG = Logger.getLogger("main");
-    int maxItems = 50;
+
+    public static final int maxItems = 50;
+
     private final CompletableFuture<LanguageClient> client = new CompletableFuture<>();
     private final JavaTextDocumentService textDocuments = new JavaTextDocumentService(client, this);
     private final JavaWorkspaceService workspace =
             new JavaWorkspaceService(client, this, textDocuments);
+
     private Path workspaceRoot = Paths.get(".");
 
     private Configured cacheConfigured;

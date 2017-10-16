@@ -1,5 +1,5 @@
 package org.javacs.other;
 
-class OtherPackagePrivate {
-    
+public class OtherPackagePrivate {
+
 }

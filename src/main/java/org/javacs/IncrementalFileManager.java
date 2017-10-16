@@ -1,3 +1,18 @@
+/*
+ * Original work Copyright (c) 2017 George W Fraser.
+ * Modified work Copyright (c) 2017 Palantir Technologies, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ */
+
 package org.javacs;
 
 import com.google.common.collect.ImmutableList;
@@ -20,15 +35,20 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import javax.lang.model.element.TypeElement;
-import javax.tools.*;
+import javax.tools.FileObject;
+import javax.tools.ForwardingJavaFileManager;
+import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
-import org.javacs.pubapi.*;
+import javax.tools.StandardLocation;
+import org.javacs.pubapi.PubApi;
+import org.javacs.pubapi.PubapiVisitor;
 
 /**
  * An implementation of JavaFileManager that removes any .java source files where there is an
  * up-to-date .class file
  */
-class IncrementalFileManager extends ForwardingJavaFileManager<JavaFileManager> {
+public class IncrementalFileManager extends ForwardingJavaFileManager<JavaFileManager> {
     private final Set<URI> warnedHidden = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final JavacTool javac = JavacTool.create();
     private final JavaFileManager classOnlyFileManager;
