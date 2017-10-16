@@ -37,7 +37,9 @@ import java.util.stream.Stream;
  * your own risk. This code and its internal interfaces are subject to change or deletion without
  * notice.</b>
  */
-public class Util {
+public final class Util {
+
+    private Util() {}
 
     public static String toFileSystemPath(String pkgId) {
         if (pkgId == null || pkgId.length() == 0) return null;

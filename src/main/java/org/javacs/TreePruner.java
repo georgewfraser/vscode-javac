@@ -31,8 +31,11 @@ import java.io.IOException;
 import java.io.Reader;
 import javax.tools.JavaFileObject;
 
-/** Fix up the tree to make it easier to autocomplete, index */
+/**
+ * Fix up the tree to make it easier to autocomplete, index.
+ */
 public class TreePruner {
+
     private final JavacTask task;
 
     TreePruner(JavacTask task) {

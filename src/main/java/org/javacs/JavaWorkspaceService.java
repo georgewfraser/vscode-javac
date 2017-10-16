@@ -33,9 +33,13 @@ import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
 public class JavaWorkspaceService implements WorkspaceService {
+
+    private static final Logger LOG = Logger.getLogger("main");
+
     private final CompletableFuture<LanguageClient> client;
     private final JavaLanguageServer server;
     private final JavaTextDocumentService textDocuments;
+
     private JavaSettings settings = new JavaSettings();
 
     JavaWorkspaceService(
@@ -110,5 +114,4 @@ public class JavaWorkspaceService implements WorkspaceService {
         textDocuments.doLint(textDocuments.openFiles());
     }
 
-    private static final Logger LOG = Logger.getLogger("main");
 }

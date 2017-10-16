@@ -62,7 +62,8 @@ import org.eclipse.lsp4j.services.WorkspaceService;
 public class JavaLanguageServer implements LanguageServer {
 
     private static final Logger LOG = Logger.getLogger("main");
-    private static final int maxItems = 50;
+
+    public static final int maxItems = 50;
 
     private final CompletableFuture<LanguageClient> client = new CompletableFuture<>();
     private final JavaTextDocumentService textDocuments = new JavaTextDocumentService(client, this);
