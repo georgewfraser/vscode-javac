@@ -15,8 +15,14 @@
 
 package org.javacs;
 
-import com.sun.source.tree.*;
-import com.sun.source.util.*;
+import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.ErroneousTree;
+import com.sun.source.tree.Tree;
+import com.sun.source.util.JavacTask;
+import com.sun.source.util.SourcePositions;
+import com.sun.source.util.TreePath;
+import com.sun.source.util.TreePathScanner;
+import com.sun.source.util.Trees;
 import java.util.Optional;
 
 class FindCursor {

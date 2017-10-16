@@ -25,7 +25,19 @@
 
 package org.javacs.example;
 
-import java.io.*;
+import static com.sun.tools.javac.code.TypeTag.CLASS;
+import static com.sun.tools.javac.main.Option.*;
+import static com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag.*;
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
+
+import com.sun.source.util.TaskEvent;
+import com.sun.tools.javac.api.MultiTaskListener;
+import com.sun.tools.javac.code.Lint.LintCategory;
+import com.sun.tools.javac.code.Symbol.*;
+import com.sun.tools.javac.comp.CompileStates.CompileState;
+import com.sun.tools.javac.file.JavacFileManager;
+import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.util.Log.WriterKind;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -35,38 +47,12 @@ import java.util.MissingResourceException;
 import java.util.Queue;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import javax.annotation.processing.Processor;
 import javax.lang.model.SourceVersion;
 import javax.tools.DiagnosticListener;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-
-import static javax.tools.StandardLocation.CLASS_OUTPUT;
-
-import com.sun.source.util.TaskEvent;
-import com.sun.tools.javac.api.MultiTaskListener;
-import com.sun.tools.javac.code.*;
-import com.sun.tools.javac.code.Lint.LintCategory;
-import com.sun.tools.javac.code.Symbol.*;
-import com.sun.tools.javac.comp.*;
-import com.sun.tools.javac.comp.CompileStates.CompileState;
-import com.sun.tools.javac.file.JavacFileManager;
-import com.sun.tools.javac.jvm.*;
-import com.sun.tools.javac.parser.*;
-import com.sun.tools.javac.processing.*;
-import com.sun.tools.javac.tree.*;
-import com.sun.tools.javac.tree.JCTree.*;
-import com.sun.tools.javac.util.*;
-import com.sun.tools.javac.util.Log.WriterKind;
-
-import static com.sun.tools.javac.code.TypeTag.CLASS;
-import static com.sun.tools.javac.main.Option.*;
-import static com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag.*;
 
 
 /** This class could be the main entry point for GJC when GJC is used as a

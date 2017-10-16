@@ -1,7 +1,5 @@
 package org.javacs.example;
 
-import java.util.*;
-
 public class AutocompleteBetweenLines {
     public static void test() {
         List<String> items = new ArrayList<>();

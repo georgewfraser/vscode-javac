@@ -1,7 +1,5 @@
 package org.javacs.docs;
 
-import java.util.*; 
-
 class TrickyDocstring {
 
     void test() {

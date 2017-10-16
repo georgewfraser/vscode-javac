@@ -15,8 +15,9 @@
 
 package org.javacs;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;

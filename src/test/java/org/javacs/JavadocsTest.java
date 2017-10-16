@@ -15,7 +15,9 @@
 
 package org.javacs;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.emptyArray;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 

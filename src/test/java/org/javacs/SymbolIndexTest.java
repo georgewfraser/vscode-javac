@@ -15,8 +15,8 @@
 
 package org.javacs;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertThat;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

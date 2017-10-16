@@ -1,7 +1,5 @@
 package org.javacs.example;
 
-import java.util.*;
-
 class AutocompleteContext {
     void test() {
         int length = 10;

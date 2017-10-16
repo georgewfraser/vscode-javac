@@ -15,14 +15,18 @@
 
 package org.javacs;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
-import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.ReferenceParams;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.junit.Test;
 
 public class FindReferencesTest {
