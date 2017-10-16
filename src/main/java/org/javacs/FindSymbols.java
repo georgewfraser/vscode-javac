@@ -50,7 +50,7 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
-class FindSymbols {
+public class FindSymbols {
     private final SymbolIndex index;
     private final JavacHolder compiler;
     private final Function<URI, Optional<String>> activeContent;

@@ -28,7 +28,7 @@ import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.services.LanguageClient;
 
-class LanguageServerFixture {
+public class LanguageServerFixture {
 
     public static Path DEFAULT_WORKSPACE_ROOT =
             Paths.get("src/test/test-project/workspace").toAbsolutePath();

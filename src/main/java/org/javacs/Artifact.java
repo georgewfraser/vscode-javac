@@ -17,7 +17,7 @@ package org.javacs;
 
 import java.util.Objects;
 
-class Artifact {
+public class Artifact {
     final String groupId, artifactId, version;
 
     Artifact(String groupId, String artifactId, String version) {

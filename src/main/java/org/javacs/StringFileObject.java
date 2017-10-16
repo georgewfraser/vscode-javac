@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import javax.tools.SimpleJavaFileObject;
 
-class StringFileObject extends SimpleJavaFileObject {
+public class StringFileObject extends SimpleJavaFileObject {
     private final String content;
     private final URI path; // TODO rename
 

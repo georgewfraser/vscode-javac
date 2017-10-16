@@ -22,7 +22,7 @@ import com.sun.javadoc.SeeTag;
 import com.sun.javadoc.SourcePosition;
 import com.sun.javadoc.Tag;
 
-class EmptyRootDoc implements RootDoc {
+public class EmptyRootDoc implements RootDoc {
     static final EmptyRootDoc INSTANCE = new EmptyRootDoc();
 
     private EmptyRootDoc() {}

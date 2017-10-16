@@ -29,7 +29,7 @@ import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
 
-class CodeActions {
+public class CodeActions {
     private final JavacHolder compiler;
     private final URI file;
     private final Optional<String> textContent;

@@ -33,7 +33,7 @@ import javax.lang.model.type.UnionType;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.AbstractTypeVisitor8;
 
-class ShortTypePrinter extends AbstractTypeVisitor8<String, Void> {
+public class ShortTypePrinter extends AbstractTypeVisitor8<String, Void> {
     private static final Logger LOG = Logger.getLogger("main");
 
     private ShortTypePrinter() {}

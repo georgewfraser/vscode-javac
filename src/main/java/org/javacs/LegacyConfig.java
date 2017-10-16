@@ -49,7 +49,7 @@ import org.eclipse.lsp4j.MessageType;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-class LegacyConfig {
+public class LegacyConfig {
     private final Path workspaceRoot;
 
     LegacyConfig(Path workspaceRoot) {

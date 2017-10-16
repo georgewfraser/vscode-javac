@@ -18,7 +18,7 @@ package org.javacs;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
 
-class ShowMessageException extends RuntimeException {
+public class ShowMessageException extends RuntimeException {
     private final MessageParams message;
 
     ShowMessageException(MessageParams message, Exception cause) {

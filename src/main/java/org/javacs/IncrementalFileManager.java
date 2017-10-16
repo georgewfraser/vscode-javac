@@ -48,7 +48,7 @@ import org.javacs.pubapi.PubapiVisitor;
  * An implementation of JavaFileManager that removes any .java source files where there is an
  * up-to-date .class file
  */
-class IncrementalFileManager extends ForwardingJavaFileManager<JavaFileManager> {
+public class IncrementalFileManager extends ForwardingJavaFileManager<JavaFileManager> {
     private final Set<URI> warnedHidden = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final JavacTool javac = JavacTool.create();
     private final JavaFileManager classOnlyFileManager;

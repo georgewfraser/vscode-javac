@@ -32,7 +32,7 @@ import java.io.Reader;
 import javax.tools.JavaFileObject;
 
 /** Fix up the tree to make it easier to autocomplete, index */
-class TreePruner {
+public class TreePruner {
     private final JavacTask task;
 
     TreePruner(JavacTask task) {

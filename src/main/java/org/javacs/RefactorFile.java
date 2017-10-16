@@ -42,7 +42,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 
-class RefactorFile {
+public class RefactorFile {
     private final JavacTask task;
     private final CompilationUnitTree source;
     private final SourcePositions pos;

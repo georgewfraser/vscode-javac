@@ -1,6 +1,6 @@
 package org.javacs.example;
 
-class Target {
+public class Target {
     static String name() {
         return "foo";
     }

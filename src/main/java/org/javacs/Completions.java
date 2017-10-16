@@ -58,7 +58,7 @@ import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.TextEdit;
 
-class Completions {
+public class Completions {
 
     static Stream<CompletionItem> at(FocusedResult compiled, SymbolIndex index, Javadocs docs) {
         Function<TreePath, Completions> newCompletions =

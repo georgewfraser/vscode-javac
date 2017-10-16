@@ -40,7 +40,7 @@ import sun.misc.Launcher;
  * <p>The isn't the only way we inspect the classpath---when completing members, for example, we use
  * the Javac API. This path is strictly for when we have to search the *entire* classpath.
  */
-class ClassPathIndex {
+public class ClassPathIndex {
 
     private final List<ClassPath.ClassInfo> topLevelClasses;
 

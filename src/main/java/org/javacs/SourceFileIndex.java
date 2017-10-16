@@ -19,7 +19,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-class SourceFileIndex {
+public class SourceFileIndex {
     String packageName = "";
 
     /** Simple names of classes declared in this file */

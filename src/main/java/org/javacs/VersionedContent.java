@@ -15,7 +15,7 @@
 
 package org.javacs;
 
-class VersionedContent {
+public class VersionedContent {
     final String content;
     final int version;
 

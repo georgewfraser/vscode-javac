@@ -15,7 +15,7 @@
 
 package org.javacs;
 
-class Configured {
+public class Configured {
     final JavacHolder compiler;
     final Javadocs docs;
     final SymbolIndex index;

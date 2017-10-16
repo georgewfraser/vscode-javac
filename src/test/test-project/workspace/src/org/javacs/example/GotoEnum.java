@@ -1,6 +1,6 @@
 package org.javacs.example;
 
-class GotoEnum {
+public class GotoEnum {
     void test() {
         System.out.println(Foos.Foo);
     }

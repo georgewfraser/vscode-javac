@@ -15,7 +15,7 @@
 
 package org.javacs;
 
-class ReachableClass {
+public class ReachableClass {
     final String packageName, className;
     final boolean publicClass, publicConstructor, packagePrivateConstructor, hasTypeParameters;
 

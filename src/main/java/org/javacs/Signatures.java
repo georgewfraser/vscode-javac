@@ -38,7 +38,7 @@ import org.eclipse.lsp4j.ParameterInformation;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureInformation;
 
-class Signatures {
+public class Signatures {
     static Optional<SignatureHelp> help(
             FocusedResult compiled, int line, int column, Javadocs docs) {
         long offset = compiled.compilationUnit.getLineMap().getPosition(line, column);

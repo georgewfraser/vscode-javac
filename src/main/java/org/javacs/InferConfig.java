@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class InferConfig {
+public class InferConfig {
     /** Root of the workspace that is currently open in VSCode */
     private final Path workspaceRoot;
     /** User-specified external dependencies, configured with java.externalDependencies */

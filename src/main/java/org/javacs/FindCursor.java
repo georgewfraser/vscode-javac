@@ -25,7 +25,7 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
 import java.util.Optional;
 
-class FindCursor {
+public class FindCursor {
 
     public static Optional<TreePath> find(
             JavacTask task, CompilationUnitTree source, int line, int column) {

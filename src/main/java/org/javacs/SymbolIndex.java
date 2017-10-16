@@ -72,7 +72,7 @@ import org.eclipse.lsp4j.SymbolKind;
  * Global index of exported symbol declarations and references. such as classes, methods, and
  * fields.
  */
-class SymbolIndex {
+public class SymbolIndex {
 
     private final Path workspaceRoot;
     private final Supplier<Collection<URI>> openFiles;

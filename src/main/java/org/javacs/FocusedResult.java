@@ -20,7 +20,7 @@ import com.sun.source.util.JavacTask;
 import com.sun.source.util.TreePath;
 import java.util.Optional;
 
-class FocusedResult {
+public class FocusedResult {
     final CompilationUnitTree compilationUnit;
     final Optional<TreePath> cursor;
     final JavacTask task;

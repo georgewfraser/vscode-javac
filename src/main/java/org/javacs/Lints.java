@@ -27,7 +27,7 @@ import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
-class Lints {
+public class Lints {
 
     static Optional<Diagnostic> convert(javax.tools.Diagnostic<? extends JavaFileObject> error) {
         if (error.getStartPosition() != javax.tools.Diagnostic.NOPOS) {

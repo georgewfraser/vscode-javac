@@ -1,6 +1,6 @@
 package org.javacs.docs;
 
-class InterfaceDoc {
+public class InterfaceDoc {
     /**
      * A docstring from an interface
      */
