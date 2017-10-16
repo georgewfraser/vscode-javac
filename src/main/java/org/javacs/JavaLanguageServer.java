@@ -59,13 +59,16 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
-class JavaLanguageServer implements LanguageServer {
+public class JavaLanguageServer implements LanguageServer {
+
     private static final Logger LOG = Logger.getLogger("main");
-    int maxItems = 50;
+    private static final int maxItems = 50;
+
     private final CompletableFuture<LanguageClient> client = new CompletableFuture<>();
     private final JavaTextDocumentService textDocuments = new JavaTextDocumentService(client, this);
     private final JavaWorkspaceService workspace =
             new JavaWorkspaceService(client, this, textDocuments);
+
     private Path workspaceRoot = Paths.get(".");
 
     private Configured cacheConfigured;

@@ -74,7 +74,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
-class JavaTextDocumentService implements TextDocumentService {
+public class JavaTextDocumentService implements TextDocumentService {
     private final CompletableFuture<LanguageClient> client;
     private final JavaLanguageServer server;
     private final Map<URI, VersionedContent> activeDocuments = new HashMap<>();

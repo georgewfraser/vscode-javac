@@ -32,7 +32,7 @@ import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
-class JavaWorkspaceService implements WorkspaceService {
+public class JavaWorkspaceService implements WorkspaceService {
     private final CompletableFuture<LanguageClient> client;
     private final JavaLanguageServer server;
     private final JavaTextDocumentService textDocuments;
