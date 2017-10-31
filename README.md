@@ -1,11 +1,19 @@
-# VS Code support for Java using the [Java Compiler API](https://docs.oracle.com/javase/7/docs/api/javax/tools/JavaCompiler.html)
+# VS Code and Language Server Protocol support for Java using the [Java Compiler API](https://docs.oracle.com/javase/7/docs/api/javax/tools/JavaCompiler.html)
 
 Provides Java support using the Java Compiler API.
 Requires that you have Java 8 installed on your system.
 
-## Installation
+## Installation for VS Code
 
 [Install from the VS Code marketplace](https://marketplace.visualstudio.com/items?itemName=georgewfraser.vscode-javac)
+
+## Installation and Running for Other Editors (manually)
+
+- clone the repository
+- run `mvn package`
+- copy the produced jar file at `out/fat-jar.jar` to an appropriate location
+- run on a socket with `java -cp -Djavacs.port=${PORT} /path/to/fat-jar.jar org.javacs.Main`
+- run through stdin/stdout with `java -cp /path/to/fat-jar.jar org.javacs.Main`
 
 ## [Issues](https://github.com/georgewfraser/vscode-javac/issues)
 
