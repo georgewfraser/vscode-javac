@@ -2,12 +2,15 @@ package org.javacs;
 
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -110,6 +113,12 @@ class InferConfig {
             }
         }
 
+        Path gradleBuild = workspaceRoot.resolve("build.gradle");
+
+        if (Files.exists(gradleBuild)) {
+          result = Stream.concat(result, getGradleDependencies().stream());
+        }
+
         return result.collect(Collectors.toSet());
     }
 
@@ -158,7 +167,12 @@ class InferConfig {
             }
         }
 
-        // TODO gradle
+        if (file.getFileName().toString().equals("build.gradle")) {
+          Path target = file.resolveSibling("build");
+            if (Files.exists(target) && Files.isDirectory(target)) {
+                return Stream.of(target.resolve("classes"));
+            }
+        }
 
         return Stream.empty();
     }
@@ -298,6 +312,169 @@ class InferConfig {
         }
     }
 
+    private File createTempGradleConfig() {
+      try {
+          File temp = File.createTempFile("tempGradle", ".config");
+          File config = File.createTempFile("classpath", ".gradle");
+          String separator = System.getProperty("line.separator");
+          String classpathGradleConfig = String.join(
+                separator,
+                "boolean isResolvable(Configuration conf) {",
+                "  // isCanBeResolved was added in Gradle 3.3. Previously, all configurations were resolvable",
+                "  if (Configuration.class.declaredMethods.any { it.name == 'isCanBeResolved' }) {",
+                "    return conf.canBeResolved",
+                "  }",
+                "  return true",
+                "}",
+                "Collection getBuildCacheForDependency(File dependency) {",
+                "  String name = dependency.getName()",
+                "  String home = System.getProperty('user.home')",
+                "  String gradleCache = home + '/.gradle/caches'",
+                "  if (file(gradleCache).exists()) {",
+                "    String include = '**/' + name +  '/**/classes.jar'",
+                "    return fileTree(dir: gradleCache, include: include).files.findAll { it.isFile() }",
+                "  } else {",
+                "    return zipTree(dependency)",
+                "  }",
+                "}",
+                "task classpath {",
+                "  doLast {",
+                "    HashSet<String> classpathFiles = new HashSet<String>()",
+                "    for (proj in allprojects) {",
+                "      for (conf in proj.configurations) {",
+                "        if (isResolvable(conf)) {",
+                "          for (dependency in conf) {",
+                "            if (dependency.name.endsWith('jar')) {",
+                "              classpathFiles += dependency",
+                "            } else {",
+                "              classpathFiles += getBuildCacheForDependency(dependency)",
+                "            }",
+                "          }",
+                "        }",
+                "      }",
+                "",
+                "      if (proj.hasProperty('android')) {",
+                "        classpathFiles += proj.android.getBootClasspath()",
+                "        if (proj.android.hasProperty('applicationVariants')) {",
+                "          proj.android.applicationVariants.all { v ->",
+                "            if (v.hasProperty('compileConfiguration')) {",
+                "              v.compileConfiguration.each { dependency ->",
+                "                if (dependency.name.endsWith('jar')) {",
+                "                  classpathFiles += dependency",
+                "                } else {",
+                "                  classpathFiles += getBuildCacheForDependency(dependency)",
+                "                }",
+                "              }",
+                "            }",
+                "            if (v.hasProperty('runtimeConfiguration')) {",
+                "              v.runtimeConfiguration.each { dependency ->",
+                "                if (dependency.name.endsWith('jar')) {",
+                "                  classpathFiles += dependency",
+                "                } else {",
+                "                  classpathFiles += getBuildCacheForDependency(dependency)",
+                "                }",
+                "              }",
+                "            }",
+                "            if (v.hasProperty('getApkLibraries')) {",
+                "              classpathFiles += v.getApkLibraries()",
+                "            }",
+                "            if (v.hasProperty('getCompileLibraries')) {",
+                "              classpathFiles += v.getCompileLibraries()",
+                "            }",
+                "          }",
+                "        }",
+                "",
+                "        if (proj.android.hasProperty('libraryVariants')) {",
+                "          proj.android.libraryVariants.all { v ->",
+                "            classpathFiles += v.javaCompile.classpath.files",
+                "          }",
+                "        }",
+                "      }",
+                "    }",
+                "",
+                "    for (path in classpathFiles) {",
+                "      println path;",
+                "    }",
+                "  }",
+                "}"
+        );
+
+          BufferedWriter bw = new BufferedWriter(new FileWriter(config));
+          bw.write(classpathGradleConfig);
+          bw.close();
+
+          bw = new BufferedWriter(new FileWriter(temp));
+          bw.write(String.format("rootProject{ apply from: '%s'} ", config.getAbsolutePath()));
+          bw.close();
+
+          return temp;
+
+      } catch(IOException e){
+        e.printStackTrace();
+      }
+      return null;
+    }
+
+    private List<Path> getGradleDependencies() {
+        try {
+            // Tell maven to output deps to a temporary file
+            Path outputFile = Files.createTempFile("deps", ".txt");
+            File config = createTempGradleConfig();
+            if (config != null) {
+              String cmd =
+                      String.format(
+                              "%s -I %s classpath",
+                              getGradleCommand().toAbsolutePath().toString(), config.getAbsolutePath().toString());
+              LOG.warning(cmd);
+              Process classpathCommand = Runtime.getRuntime().exec(cmd, null, workspaceRoot.toFile());
+
+              InputStream stdout = classpathCommand.getInputStream();
+
+              InputStreamReader streamReader = new InputStreamReader(stdout);
+              BufferedReader bufferedReader = new BufferedReader(streamReader);
+
+              List<String> classpathLines = new ArrayList<String>();
+
+              int result = classpathCommand.waitFor();
+              LOG.warning(workspaceRoot.toFile().toString());
+
+              LOG.warning(result + "");
+              if (result != 0) throw new RuntimeException("`" + cmd + "` returned " + result);
+
+              Pattern artifact = Pattern.compile("^.+?\\.jar$");
+              List<Path> dependencies = bufferedReader.lines()
+                    .map(String::trim)
+                    .filter(line -> artifact.matcher(line).matches())
+                    .map(Paths::get)
+                    .collect(Collectors.toList());
+              if (dependencies != null) {
+                return dependencies;
+              }
+            }
+
+            return new ArrayList<Path>();
+
+        } catch (InterruptedException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static List<Path> readGradleDependencyList(Path outputFile) {
+      Pattern artifact = Pattern.compile("^.+?\\.jar$");
+
+      try (InputStream in = Files.newInputStream(outputFile)) {
+            return new BufferedReader(new InputStreamReader(in))
+                    .lines()
+                    .map(String::trim)
+                    .filter(line -> artifact.matcher(line).matches())
+                    .map(Paths::get)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     private static List<Artifact> readDependencyList(Path outputFile) {
         Pattern artifact = Pattern.compile(".*:.*:.*:.*:.*");
 
@@ -325,6 +502,20 @@ class InferConfig {
         if (Files.exists(pomXml)) return dependencyList(pomXml);
 
         return Collections.emptyList();
+    }
+
+    private Path getGradleCommand() {
+      Path gradleCommand = Paths.get(findExecutableOnPath("gradle"));
+      Path unixGradle = workspaceRoot.resolve("gradlew");
+      Path windowsGradle = workspaceRoot.resolve("gradlew.bat");
+
+      if (File.separatorChar == '\\' && Files.exists(windowsGradle)) {
+        gradleCommand = windowsGradle;
+      } else if (Files.exists(unixGradle)) {
+        gradleCommand = unixGradle;
+      }
+
+      return gradleCommand;
     }
 
     static String getMvnCommand() {
