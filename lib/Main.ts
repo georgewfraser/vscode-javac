@@ -142,9 +142,9 @@ interface CustomTelemetryEvent {
 function isJava8(javaExecutablePath: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
         let result = ChildProcess.execFile(javaExecutablePath, ['-version'], { }, (error, stdout, stderr) => {
-            let eight = stderr.indexOf('1.8') >= 0;
+            let eight = stderr.indexOf('1.8') >= 0, nine = stderr.indexOf('"9"') >= 0;
             
-            resolve(eight);
+            resolve(eight || nine);
         });
     });
 }

@@ -1,5 +1,6 @@
 package org.javacs;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.reflect.ClassPath;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -7,7 +8,9 @@ import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -15,7 +18,6 @@ import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import sun.misc.Launcher;
 
 /**
  * Index the classpath *without* using the java compiler API. The classpath can contain problematic
@@ -42,8 +44,47 @@ class ClassPathIndex {
         return Integer.compare(left.getSimpleName().length(), right.getSimpleName().length());
     }
 
-    public static URLClassLoader parentClassLoader() {
-        URL[] bootstrap = Launcher.getBootstrapClassPath().getURLs();
+    private static URL toUrl(Path path) {
+        try {
+            return path.toUri().toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** Find all the java 8 platform .jar files */
+    static URL[] java8Platform(String javaHome) {
+        Path rt = Paths.get(javaHome).resolve("lib").resolve("rt.jar");
+
+        if (Files.exists(rt)) return new URL[] {toUrl(rt)};
+        else throw new RuntimeException(rt + " does not exist");
+    }
+
+    /** Find all the java 9 platform .jmod files */
+    static URL[] java9Platform(String javaHome) {
+        Path jmods = Paths.get(javaHome).resolve("jmods");
+
+        try {
+            return Files.list(jmods)
+                    .filter(path -> path.getFileName().toString().endsWith(".jmod"))
+                    .map(path -> toUrl(path))
+                    .toArray(URL[]::new);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static boolean isJava9() {
+        return StandardSystemProperty.JAVA_VERSION.value().equals("9");
+    }
+
+    private static URL[] platform() {
+        if (isJava9()) return java9Platform(StandardSystemProperty.JAVA_HOME.value());
+        else return java8Platform(StandardSystemProperty.JAVA_HOME.value());
+    }
+
+    static URLClassLoader parentClassLoader() {
+        URL[] bootstrap = platform();
 
         return new URLClassLoader(bootstrap, null);
     }
@@ -58,8 +99,9 @@ class ClassPathIndex {
 
     private static URLClassLoader classLoader(Set<Path> classPath) {
         URL[] urls = classPath.stream().flatMap(ClassPathIndex::url).toArray(URL[]::new);
+        URLClassLoader platform = new URLClassLoader(platform(), null);
 
-        return new URLClassLoader(urls, parentClassLoader());
+        return new URLClassLoader(urls, platform);
     }
 
     private static Stream<URL> url(Path path) {

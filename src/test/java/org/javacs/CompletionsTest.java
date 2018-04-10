@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 
 import com.google.common.collect.Lists;
 import java.io.IOException;
-import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -539,21 +538,6 @@ public class CompletionsTest extends CompletionsBase {
         Set<String> suggestions = insertText(file, 7, 9);
 
         assertThat("Has class from classpath", suggestions, hasItems("com", "org"));
-    }
-
-    @Test
-    public void createEmptyLoader() throws ClassNotFoundException {
-        URLClassLoader emptyClassLoader = ClassPathIndex.parentClassLoader();
-
-        assertThat(emptyClassLoader.loadClass("java.util.ArrayList"), not(nullValue()));
-
-        try {
-            Class<?> found = emptyClassLoader.loadClass("com.google.common.collect.Lists");
-
-            fail("Found " + found);
-        } catch (ClassNotFoundException e) {
-            // OK
-        }
     }
 
     @Test
