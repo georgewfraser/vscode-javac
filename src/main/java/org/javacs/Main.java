@@ -9,11 +9,13 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 import com.sun.tools.javac.api.JavacTool;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -87,7 +89,7 @@ public class Main {
         setRootFormat();
 
         try {
-            Socket connection = connectToNode();
+            Optional<Socket> connection = connectToNode();
 
             run(connection);
         } catch (Throwable t) {
@@ -97,29 +99,42 @@ public class Main {
         }
     }
 
-    private static Socket connectToNode() throws IOException {
+    private static Optional<Socket> connectToNode() throws IOException {
         String port = System.getProperty("javacs.port");
 
-        Objects.requireNonNull(port, "-Djavacs.port=? is required");
+        if (port == null) {
+            LOG.info("No port specified. Defaulting to stdin/stdout.");
 
-        LOG.info("Connecting to " + port);
+            return Optional.empty();
+        } else {
+            LOG.info("Connecting to " + port);
 
-        Socket socket = new Socket("localhost", Integer.parseInt(port));
+            Socket socket = new Socket("localhost", Integer.parseInt(port));
 
-        LOG.info("Connected to parent using socket on port " + port);
+            LOG.info("Connected to parent using socket on port " + port);
 
-        return socket;
+            return Optional.of(socket);
+        }
     }
 
     /**
      * Listen for requests from the parent node process. Send replies asynchronously. When the
      * request stream is closed, wait for 5s for all outstanding responses to compute, then return.
      */
-    public static void run(Socket connection) throws IOException {
+    public static void run(Optional<Socket> connection) throws IOException {
+        InputStream in;
+        OutputStream out;
+
+        if (connection.isPresent()) {
+            in = connection.get().getInputStream();
+            out = connection.get().getOutputStream();
+        } else {
+            in = System.in;
+            out = System.out;
+        }
+
         JavaLanguageServer server = new JavaLanguageServer();
-        Launcher<LanguageClient> launcher =
-                LSPLauncher.createServerLauncher(
-                        server, connection.getInputStream(), connection.getOutputStream());
+        Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(server, in, out);
 
         server.installClient(launcher.getRemoteProxy());
         launcher.startListening();
