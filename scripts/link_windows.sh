@@ -33,6 +33,6 @@ rm -rf dist/windows
 $REAL_JAVA_HOME/bin/jlink \
   --module-path $JAVA_HOME/jmods:modules/gson.jar:target/classes \
   --add-modules gson,javacs \
-  --launcher launcher=javacs/org.javacs.Main \
+  --launcher launcher=javacs/org.javacs_server.Main \
   --output dist/windows \
   --compress 2 

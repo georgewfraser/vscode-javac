@@ -1,6 +1,7 @@
 /out
 /node_modules
 /target
+**/target
 /dist
 /modules/gson.jar
 /jdks

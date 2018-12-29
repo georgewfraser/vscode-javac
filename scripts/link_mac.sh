@@ -19,6 +19,6 @@ rm -rf dist/mac
 $JAVA_HOME/bin/jlink \
   --module-path modules/gson.jar:target/classes \
   --add-modules gson,javacs \
-  --launcher launcher=javacs/org.javacs.Main \
+  --launcher launcher=javacs/org.javacs_server.Main \
   --output dist/mac \
   --compress 2 
