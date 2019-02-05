@@ -283,6 +283,7 @@ class InferConfig {
             var command =
                     List.of(
                             getMvnCommand(),
+                            "--batch-mode", // Turns off ANSI control sequences
                             "validate",
                             goal,
                             "-DincludeScope=test",
