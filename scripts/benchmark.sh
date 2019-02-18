@@ -1,8 +1,8 @@
 
 #!/bin/bash
 
-# Needed if you have a java version other than 11 as default
-JAVA_HOME=$(/usr/libexec/java_home -v 11)
+# Check JAVA_HOME points to correct java version
+./scripts/check_java_home.sh
 
 # Compile the benchmark
 mvn test-compile

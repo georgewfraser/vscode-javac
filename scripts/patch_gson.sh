@@ -5,8 +5,8 @@
 
 set -e
 
-# Needed if you have a java version other than 11 as default
-JAVA_HOME=$(/usr/libexec/java_home -v 11)
+# Check JAVA_HOME points to java 11
+./scripts/check_java_home.sh
 
 # Download Gson jar
 cd modules
@@ -15,14 +15,14 @@ curl https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.5/gson-2.8.5.j
 # Unpack jar into modules/classes
 mkdir classes
 cd classes
-jar xf ../gson.jar
+$JAVA_HOME/bin/jar xf ../gson.jar
 cd ..
 
 # Compile module-info.java to module-info.class
-javac -p com.google.gson -d classes module-info.java
+$JAVA_HOME/bin/javac -p com.google.gson -d classes module-info.java
 
 # Update gson.jar with module-info.class
-jar uf gson.jar -C classes module-info.class
+$JAVA_HOME/bin/jar uf gson.jar -C classes module-info.class
 
 # Clean up
 rm -rf classes

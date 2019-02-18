@@ -3,8 +3,8 @@
 
 set -e
 
-# Needed if you have a java version other than 11 as default
-JAVA_HOME=$(/usr/libexec/java_home -v 11)
+# Check JAVA_HOME points to correct java version
+./scripts/check_java_home.sh
 
 # Compile sources
 mvn compile
@@ -25,8 +25,8 @@ if [ ! -e jdks/windows/jdk-11.0.1 ]; then
 fi
 
 # Set env variables to build with mac toolchain but windows target
+REAL_JAVA_HOME=$JAVA_HOME
 JAVA_HOME="./jdks/windows/jdk-11.0.1"
-REAL_JAVA_HOME=$(/usr/libexec/java_home -v 11)
 
 # Build in dist/windows
 rm -rf dist/windows
