@@ -15,10 +15,13 @@ public class Docs {
     /** File manager with source-path + platform sources, which we will use to look up individual source files */
     private final SourceFileManager fileManager = new SourceFileManager();
 
-    private static Path srcZip() {
+    private static Optional<Path> srcZip() {
+        if (!Lib.SRC_ZIP.isPresent()) {
+          return Optional.empty();
+        }
         try {
-            var fs = FileSystems.newFileSystem(Lib.SRC_ZIP, Docs.class.getClassLoader());
-            return fs.getPath("/");
+            var fs = FileSystems.newFileSystem(Lib.SRC_ZIP.get(), Docs.class.getClassLoader());
+            return Optional.of(fs.getPath("/"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -30,7 +33,10 @@ public class Docs {
 
         try {
             fileManager.setLocation(StandardLocation.SOURCE_PATH, sourcePathFiles);
-            fileManager.setLocationFromPaths(StandardLocation.MODULE_SOURCE_PATH, Set.of(srcZip()));
+            Optional<Path> srcZipPath = srcZip();
+            if (srcZipPath.isPresent()) {
+              fileManager.setLocationFromPaths(StandardLocation.MODULE_SOURCE_PATH, Set.of(srcZipPath.get()));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
