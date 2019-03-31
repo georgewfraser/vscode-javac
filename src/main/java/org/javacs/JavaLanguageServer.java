@@ -345,6 +345,7 @@ class JavaLanguageServer extends LanguageServer {
                 i.label = name;
                 i.kind = CompletionItemKind.Keyword;
                 i.detail = "keyword";
+                i.insertTextFormat = InsertTextFormat.PlainText;
                 items.add(i);
             }
             return Optional.of(new CompletionList(true, items));
@@ -386,6 +387,7 @@ class JavaLanguageServer extends LanguageServer {
         for (var c : cs) {
             var i = new CompletionItem();
             var id = UUID.randomUUID().toString();
+            i.insertTextFormat = InsertTextFormat.PlainText;
             i.data = new JsonPrimitive(id);
             lastCompletions.put(id, c);
             if (c.element != null) {
