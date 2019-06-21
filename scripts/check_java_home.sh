@@ -16,9 +16,9 @@ if [ ! -f "$JAVA_HOME/bin/java" ]; then
 fi
 
 java_version=$("$JAVA_HOME/bin/java" -version 2>&1 | sed -n ';s/.* version "\(.*\)\.\(.*\)\..*".*/\1/p;')
-if [ "$java_version" -ne 11 ]; then
+if [ "$java_version" -lt 11 ]; then
   echo "JAVA_HOME is set to: $JAVA_HOME"
   echo "JAVA_HOME version is: $java_version"
-  echo "JAVA_HOME must be set to a JDK version 11"
+  echo "JAVA_HOME must be set to a JDK version >=11"
   exit 1
 fi
