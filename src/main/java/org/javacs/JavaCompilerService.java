@@ -87,6 +87,10 @@ class JavaCompilerService {
         return new ParseFile(this, file);
     }
 
+    ParseFile parseJavaFileObject(JavaFileObject file) {
+        return new ParseFile(this, file);
+    }
+
     CompileBatch compileFocus(URI uri, int line, int character) {
         var contents = Pruner.prune(uri, line, character);
         var file = new SourceFileObject(uri, contents, Instant.now());

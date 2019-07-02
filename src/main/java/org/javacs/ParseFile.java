@@ -10,13 +10,14 @@ import java.util.*;
 import java.util.logging.Logger;
 import javax.lang.model.element.*;
 import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
 import org.javacs.lsp.*;
 
 class ParseFile {
     private static final JavaCompiler COMPILER = ServiceLoader.load(JavaCompiler.class).iterator().next();
 
     /** Create a task that compiles a single file */
-    private static JavacTask singleFileTask(JavaCompilerService parent, URI file) {
+    private static JavacTask singleFileTask(JavaCompilerService parent, JavaFileObject file) {
         // TODO could eliminate the connection to parent
         parent.diags.clear();
         // TODO the fixed cost of creating a task is greater than the cost of parsing 1 file; use reusable compiler and
@@ -28,7 +29,7 @@ class ParseFile {
                         parent.diags::add,
                         JavaCompilerService.options(parent.classPath, parent.addExports),
                         Collections.emptyList(),
-                        List.of(new SourceFileObject(file)));
+                        List.of(file));
     }
 
     private final String contents;
@@ -37,10 +38,18 @@ class ParseFile {
     private final CompilationUnitTree root;
 
     ParseFile(JavaCompilerService parent, URI file) {
+        this(parent, new SourceFileObject(file));
+    }
+
+    ParseFile(JavaCompilerService parent, JavaFileObject file) {
         Objects.requireNonNull(parent);
         Objects.requireNonNull(file);
 
-        this.contents = FileStore.contents(file);
+        try {
+            this.contents = file.getCharContent(false).toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         this.task = singleFileTask(parent, file);
         this.trees = Trees.instance(task);
         var profiler = new Profiler();

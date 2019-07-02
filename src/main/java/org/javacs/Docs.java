@@ -1,6 +1,5 @@
 package org.javacs;
 
-import com.sun.source.tree.CompilationUnitTree;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -60,18 +59,6 @@ public class Docs {
         }
         LOG.info(String.format("...couldn't find file for top-level class `%s`", className));
         return Optional.empty();
-    }
-
-    public ParseFile parse(JavaFileObject file) {
-        // Parse that file
-        var task = Parser.parseTask(file);
-        CompilationUnitTree root;
-        try {
-            root = task.parse().iterator().next();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return new ParseFile(task, root);
     }
 
     private static final Pattern HTML_TAG = Pattern.compile("<(\\w+)>");

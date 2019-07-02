@@ -260,7 +260,7 @@ public class JavaCompilerServiceTest {
         var method = invocation.activeMethod.get();
         var ptr = new Ptr(method);
         var file = compiler.docs().find(ptr).get();
-        var parse = compiler.docs().parse(file);
+        var parse = compiler.parseJavaFileObject(file);
         var path = parse.fuzzyFind(ptr).get();
         var doc = parse.doc(path);
         assertThat(doc.toString(), containsString("A great method"));

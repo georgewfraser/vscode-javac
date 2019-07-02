@@ -440,7 +440,7 @@ class JavaLanguageServer extends LanguageServer {
         var file = compiler().docs().find(ptr);
         if (!file.isPresent()) return Optional.empty();
         // Parse file and find el
-        var parse = compiler().docs().parse(file.get());
+        var parse = compiler().parseJavaFileObject(file.get());
         var path = parse.fuzzyFind(ptr);
         if (!path.isPresent()) return Optional.empty();
         // Parse the doctree associated with el
@@ -459,7 +459,7 @@ class JavaLanguageServer extends LanguageServer {
         var file = compiler().docs().find(ptr);
         if (!file.isPresent()) return Optional.empty();
         // Parse file and find method
-        var parse = compiler().docs().parse(file.get());
+        var parse = compiler().parseJavaFileObject(file.get());
         var path = parse.fuzzyFind(ptr);
         if (!path.isPresent()) return Optional.empty();
         // Should be a MethodTree
@@ -599,7 +599,7 @@ class JavaLanguageServer extends LanguageServer {
         var ptr = new Ptr(e);
         var file = compiler().docs().find(ptr);
         if (!file.isPresent()) return Optional.empty();
-        var parse = compiler().docs().parse(file.get());
+        var parse = compiler().parseJavaFileObject(file.get());
         var path = parse.fuzzyFind(ptr);
         if (!path.isPresent()) return Optional.empty();
         var doc = parse.doc(path.get());
@@ -680,7 +680,7 @@ class JavaLanguageServer extends LanguageServer {
         // Find the file ptr point to, and parse it
         var file = compiler().docs().find(ptr);
         if (!file.isPresent()) return Optional.empty();
-        var parse = compiler().docs().parse(file.get());
+        var parse = compiler().parseJavaFileObject(file.get());
         // Find the tree
         var path = parse.fuzzyFind(ptr);
         if (!path.isPresent()) return Optional.empty();
