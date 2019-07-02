@@ -1205,3 +1205,91 @@ public class CompileBatch implements AutoCloseable {
 
     private static final Logger LOG = Logger.getLogger("main");
 }
+
+/**
+ * Union of the different types of completion provided by JavaCompilerService. Only one of the members will be non-null.
+ */
+class Completion {
+    final Element element;
+    final PackagePart packagePart;
+    final String keyword;
+    final ClassName className;
+    final Snippet snippet; // TODO separate label and insertText
+
+    private Completion(Element element, PackagePart packagePart, String keyword, ClassName className, Snippet snippet) {
+        this.element = element;
+        this.packagePart = packagePart;
+        this.keyword = keyword;
+        this.className = className;
+        this.snippet = snippet;
+    }
+
+    static Completion ofElement(Element element) {
+        return new Completion(element, null, null, null, null);
+    }
+
+    static Completion ofPackagePart(String fullName, String name) {
+        return new Completion(null, new PackagePart(fullName, name), null, null, null);
+    }
+
+    static Completion ofKeyword(String keyword) {
+        return new Completion(null, null, keyword, null, null);
+    }
+
+    static Completion ofClassName(String className, boolean isImported) {
+        return new Completion(null, null, null, new ClassName(className, isImported), null);
+    }
+
+    static Completion ofSnippet(String label, String snippet) {
+        return new Completion(null, null, null, null, new Snippet(label, snippet));
+    }
+
+    static class ClassName {
+        // TODO keep package and class name separate to avoid inner-class problems
+        final String name;
+        final boolean isImported;
+
+        ClassName(String name, boolean isImported) {
+            this.name = name;
+            this.isImported = isImported;
+        }
+    }
+
+    static class PackagePart {
+        final String fullName, name;
+
+        PackagePart(String fullName, String name) {
+            this.fullName = fullName;
+            this.name = name;
+        }
+    }
+
+    static class Snippet {
+        final String label, snippet;
+
+        Snippet(String label, String snippet) {
+            this.label = label;
+            this.snippet = snippet;
+        }
+    }
+}
+
+class MethodInvocation {
+    /** MethodInvocationTree or NewClassTree */
+    final ExpressionTree tree;
+
+    final Optional<ExecutableElement> activeMethod;
+    final int activeParameter;
+    final List<ExecutableElement> overloads;
+
+    MethodInvocation(
+            ExpressionTree tree,
+            Optional<ExecutableElement> activeMethod,
+            int activeParameter,
+            List<ExecutableElement> overloads) {
+        this.tree = tree;
+        this.activeMethod = activeMethod;
+        this.activeParameter = activeParameter;
+        this.overloads = overloads;
+    }
+}

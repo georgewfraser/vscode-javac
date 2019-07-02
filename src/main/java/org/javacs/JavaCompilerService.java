@@ -14,7 +14,7 @@ import javax.lang.model.element.*;
 import javax.tools.*;
 
 // TODO eliminate uses of URI in favor of Path
-public class JavaCompilerService {
+class JavaCompilerService {
     // Not modifiable! If you want to edit these, you need to create a new instance
     final Set<Path> classPath, docPath;
     final Set<String> addExports;
@@ -27,7 +27,7 @@ public class JavaCompilerService {
     // TODO intercept files that aren't in the batch and erase method bodies so compilation is faster
     final SourceFileManager fileManager;
 
-    public JavaCompilerService(Set<Path> classPath, Set<Path> docPath, Set<String> addExports) {
+    JavaCompilerService(Set<Path> classPath, Set<Path> docPath, Set<String> addExports) {
         System.err.println("Class path:");
         for (var p : classPath) {
             System.err.println("  " + p);
@@ -78,25 +78,25 @@ public class JavaCompilerService {
         return list;
     }
 
-    public Docs docs() {
+    Docs docs() {
         return docs;
     }
 
-    public ParseFile parseFile(URI file) {
+    ParseFile parseFile(URI file) {
         return new ParseFile(this, file);
     }
 
-    public CompileBatch compileFocus(URI uri, int line, int character) {
+    CompileBatch compileFocus(URI uri, int line, int character) {
         var contents = Pruner.prune(uri, line, character);
         var file = new SourceFileObject(uri, contents, Instant.now());
         return compileBatch(List.of(file));
     }
 
-    public CompileBatch compileFile(URI uri) {
+    CompileBatch compileFile(URI uri) {
         return compileUris(Collections.singleton(uri));
     }
 
-    public CompileBatch compileUris(Collection<URI> uris) {
+    CompileBatch compileUris(Collection<URI> uris) {
         var files = new ArrayList<File>();
         for (var p : uris) files.add(new File(p));
         var sources = fileManager.getJavaFileObjectsFromFiles(files);
@@ -105,11 +105,11 @@ public class JavaCompilerService {
         return new CompileBatch(this, list);
     }
 
-    public CompileBatch compileBatch(Collection<? extends JavaFileObject> sources) {
+    CompileBatch compileBatch(Collection<? extends JavaFileObject> sources) {
         return new CompileBatch(this, sources);
     }
 
-    public Set<URI> potentialDefinitions(Element to) {
+    Set<URI> potentialDefinitions(Element to) {
         LOG.info(String.format("Find potential definitions of `%s`...", to));
 
         // If `to` is private, any definitions must be in the same file
@@ -170,7 +170,7 @@ public class JavaCompilerService {
         }
     }
 
-    public Set<URI> potentialReferences(Element to) {
+    Set<URI> potentialReferences(Element to) {
         LOG.info(String.format("Find potential references to `%s`...", to));
 
         // If `to` is private, any definitions must be in the same file
@@ -225,7 +225,7 @@ public class JavaCompilerService {
                     found.add(uri);
                 }
 
-                public boolean isName(Tree t) {
+                boolean isName(Tree t) {
                     if (t instanceof MemberSelectTree) {
                         var select = (MemberSelectTree) t;
                         return select.getIdentifier().contentEquals(findName);
@@ -437,7 +437,7 @@ public class JavaCompilerService {
         return hasImport;
     }
 
-    public static String packageName(Element e) {
+    static String packageName(Element e) {
         while (e != null) {
             if (e instanceof PackageElement) {
                 var pkg = (PackageElement) e;
@@ -448,7 +448,7 @@ public class JavaCompilerService {
         return "";
     }
 
-    public static String className(Element e) {
+    static String className(Element e) {
         while (e != null) {
             if (e instanceof TypeElement) {
                 var type = (TypeElement) e;
@@ -459,7 +459,7 @@ public class JavaCompilerService {
         return "";
     }
 
-    public static String className(TreePath t) {
+    static String className(TreePath t) {
         while (t != null) {
             if (t.getLeaf() instanceof ClassTree) {
                 var cls = (ClassTree) t.getLeaf();
@@ -470,7 +470,7 @@ public class JavaCompilerService {
         return "";
     }
 
-    public static Optional<String> memberName(TreePath t) {
+    static Optional<String> memberName(TreePath t) {
         while (t != null) {
             if (t.getLeaf() instanceof ClassTree) {
                 return Optional.empty();
@@ -488,7 +488,7 @@ public class JavaCompilerService {
         return Optional.empty();
     }
 
-    public List<TreePath> findSymbols(String query, int limit) {
+    List<TreePath> findSymbols(String query, int limit) {
         LOG.info(String.format("Searching for `%s`...", query));
 
         var result = new ArrayList<TreePath>();

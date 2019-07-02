@@ -1,4 +1,4 @@
-package org.javacs;
+package org.javacs.lsp;
 
 public class JavaStartProgressParams {
     private String message;

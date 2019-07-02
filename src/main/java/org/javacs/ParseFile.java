@@ -389,7 +389,7 @@ public class ParseFile {
             @Override
             public Void visitVariable(VariableTree node, Void aVoid) {
                 check();
-                // Ptr can't point inside a method
+                // Ptr can't point inside a field
                 return null;
             }
         }
@@ -533,4 +533,39 @@ public class ParseFile {
     }
 
     private static final Logger LOG = Logger.getLogger("main");
+}
+
+class FoldingRanges {
+    final List<TreePath> imports, blocks, comments;
+
+    FoldingRanges(List<TreePath> imports, List<TreePath> blocks, List<TreePath> comments) {
+        this.imports = imports;
+        this.blocks = blocks;
+        this.comments = comments;
+    }
+}
+
+class CompletionContext {
+    // 1-based
+    final int line, character;
+    final boolean inClass, inMethod;
+    final Kind kind;
+    final String partialName;
+
+    CompletionContext(int line, int character, boolean inClass, boolean inMethod, Kind kind, String partialName) {
+        this.line = line;
+        this.character = character;
+        this.inClass = inClass;
+        this.inMethod = inMethod;
+        this.kind = kind;
+        this.partialName = partialName;
+    }
+
+    enum Kind {
+        MemberSelect,
+        MemberReference,
+        Identifier,
+        Annotation,
+        Case,
+    }
 }
