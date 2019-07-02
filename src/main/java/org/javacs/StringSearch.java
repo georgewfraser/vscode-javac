@@ -1,6 +1,21 @@
 package org.javacs;
 
+import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 // Translated from https://golang.org/src/strings/search.go
 
@@ -191,5 +206,275 @@ class StringSearch {
             this.from = from;
             this.until = until;
         }
+    }
+
+    // TODO move all this to StringSearch
+    private static final ByteBuffer SEARCH_BUFFER = ByteBuffer.allocateDirect(1 * 1024 * 1024);
+
+    // TODO cache the progress made by searching shorter queries
+    static boolean containsWordMatching(Path java, String query) {
+        if (FileStore.activeDocuments().contains(java)) {
+            var text = FileStore.contents(java);
+            return matchesTitleCase(text, query);
+        }
+        try (var channel = FileChannel.open(java)) {
+            // Read up to 1 MB of data from file
+            var limit = Math.min((int) channel.size(), SEARCH_BUFFER.capacity());
+            SEARCH_BUFFER.position(0);
+            SEARCH_BUFFER.limit(limit);
+            channel.read(SEARCH_BUFFER);
+            SEARCH_BUFFER.position(0);
+            var chars = Charset.forName("UTF-8").decode(SEARCH_BUFFER);
+            return matchesTitleCase(chars, query);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static boolean containsWord(Path java, String query) {
+        var search = new StringSearch(query);
+        if (FileStore.activeDocuments().contains(java)) {
+            var text = FileStore.contents(java).getBytes();
+            return search.nextWord(text) != -1;
+        }
+        try (var channel = FileChannel.open(java)) {
+            // Read up to 1 MB of data from file
+            var limit = Math.min((int) channel.size(), SEARCH_BUFFER.capacity());
+            SEARCH_BUFFER.position(0);
+            SEARCH_BUFFER.limit(limit);
+            channel.read(SEARCH_BUFFER);
+            SEARCH_BUFFER.position(0);
+            return search.nextWord(SEARCH_BUFFER) != -1;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Check if `candidate` contains all the characters of `find`, in-order, case-insensitive Matches can be
+     * discontinuous if the letters of `find` match the first letters of words in `candidate` For example, fb matches
+     * FooBar, but it doesn't match Foobar (exposed for testing)
+     */
+    static boolean matchesTitleCase(CharSequence candidate, String find) {
+        int i = 0;
+
+        tokenLoop:
+        while (i < candidate.length()) {
+            i = startOfToken(candidate, i);
+
+            for (char f : find.toCharArray()) {
+                // If we have reached the end of candidate without matching all of find, fail
+                if (i >= candidate.length()) return false;
+                // If the next character in candidate matches, advance i
+                else if (Character.toLowerCase(f) == Character.toLowerCase(candidate.charAt(i))) i++;
+                else {
+                    // Find the start of the next word
+                    while (i < candidate.length()) {
+                        char c = candidate.charAt(i);
+                        // If the next character is not a word, try again with the next token
+                        if (!isWordChar(c)) continue tokenLoop;
+                        // TODO match things like fb ~ foo_bar
+                        boolean isStartOfWord = Character.isUpperCase(c);
+                        boolean isMatch = Character.toLowerCase(f) == Character.toLowerCase(c);
+                        if (isStartOfWord && isMatch) {
+                            i++;
+                            break;
+                        } else i++;
+                    }
+                    if (i >= candidate.length()) return false;
+                }
+            }
+            // All of find was matched!
+            return true;
+        }
+        return false;
+    }
+
+    private static int startOfToken(CharSequence candidate, int offset) {
+        while (offset < candidate.length()) {
+            char c = candidate.charAt(offset);
+            if (isWordChar(c)) break;
+            offset++;
+        }
+        return offset;
+    }
+
+    private static boolean isWordChar(char c) {
+        return Character.isAlphabetic(c) || Character.isDigit(c) || c == '_' || c == '$';
+    }
+
+    static boolean containsImport(Path file, String toPackage, String toClass) {
+        if (toPackage.isEmpty()) return true;
+        var samePackage = Pattern.compile("^package +" + toPackage + ";");
+        var importClass = Pattern.compile("^import +" + toPackage + "\\." + toClass + ";");
+        var importStar = Pattern.compile("^import +" + toPackage + "\\.\\*;");
+        var importStatic = Pattern.compile("^import +static +" + toPackage + "\\." + toClass);
+        var startOfClass = Pattern.compile("^[\\w ]*class +\\w+");
+        try (var lines = FileStore.lines(file)) {
+            for (var line = lines.readLine(); line != null; line = lines.readLine()) {
+                if (startOfClass.matcher(line).find()) return false;
+                if (samePackage.matcher(line).find()) return true;
+                if (importClass.matcher(line).find()) return true;
+                if (importStar.matcher(line).find()) return true;
+                if (importStatic.matcher(line).find()) return true;
+                if (importClass.matcher(line).find()) return true;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
+    }
+
+    /** Find all already-imported symbols in all .java files in workspace */
+    static ExistingImports existingImports(Collection<Path> allJavaFiles) {
+        var classes = new HashSet<String>();
+        var packages = new HashSet<String>();
+        var importClass = Pattern.compile("^import +(([\\w\\.]+)\\.\\w+);");
+        var importStar = Pattern.compile("^import +([\\w\\.]+)\\.\\*;");
+        var importSimple = Pattern.compile("^import +(\\w+);");
+        for (var path : allJavaFiles) {
+            try (var lines = FileStore.lines(path)) {
+                for (var line = lines.readLine(); line != null; line = lines.readLine()) {
+                    // If we reach a class declaration, stop looking for imports
+                    // TODO This could be a little more specific
+                    if (line.contains("class")) break;
+                    // import foo.bar.Doh;
+                    var matchesClass = importClass.matcher(line);
+                    if (matchesClass.matches()) {
+                        String className = matchesClass.group(1), packageName = matchesClass.group(2);
+                        packages.add(packageName);
+                        classes.add(className);
+                    }
+                    // import foo.bar.*
+                    var matchesStar = importStar.matcher(line);
+                    if (matchesStar.matches()) {
+                        var packageName = matchesStar.group(1);
+                        packages.add(packageName);
+                    }
+                    // import Doh
+                    var matchesSimple = importSimple.matcher(line);
+                    if (matchesSimple.matches()) {
+                        var className = matchesSimple.group(1);
+                        classes.add(className);
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return new ExistingImports(classes, packages);
+    }
+
+    private static Optional<String> resolveSymbol(String unresolved, ExistingImports imports, Set<String> classPath) {
+        // Try to disambiguate by looking for exact matches
+        // For example, Foo is exactly matched by `import com.bar.Foo`
+        // Foo is *not* exactly matched by `import com.bar.*`
+        var candidates = imports.classes.stream().filter(c -> c.endsWith("." + unresolved)).collect(Collectors.toSet());
+        if (candidates.size() > 1) {
+            LOG.warning(
+                    String.format("%s is ambiguous between previously imported candidates %s", unresolved, candidates));
+            return Optional.empty();
+        } else if (candidates.size() == 1) {
+            return Optional.of(candidates.iterator().next());
+        }
+
+        // Try to disambiguate by looking at package names
+        // Both normal imports like `import com.bar.Foo`, and star-imports like `import com.bar.*`,
+        // are used to generate package names
+        candidates =
+                classPath
+                        .stream()
+                        .filter(c -> lastName(c).equals(unresolved))
+                        .filter(c -> imports.packages.contains(mostName(c)))
+                        .collect(Collectors.toSet());
+        if (candidates.size() > 1) {
+            LOG.warning(String.format("%s is ambiguous between package-based candidates %s", unresolved, candidates));
+            return Optional.empty();
+        } else if (candidates.size() == 1) {
+            return Optional.of(candidates.iterator().next());
+        }
+
+        // If there is only one class on the classpath with this name, use it
+        candidates = classPath.stream().filter(c -> lastName(c).equals(unresolved)).collect(Collectors.toSet());
+
+        if (candidates.size() > 1) {
+            LOG.warning(String.format("%s is ambiguous between classpath candidates %s", unresolved, candidates));
+        } else if (candidates.size() == 1) {
+            return Optional.of(candidates.iterator().next());
+        } else {
+            LOG.warning(unresolved + " does not appear on the classpath");
+        }
+
+        // Try to import from java stdlib
+        Comparator<String> order =
+                Comparator.comparing(
+                        c -> {
+                            if (c.startsWith("java.lang")) return 1;
+                            else if (c.startsWith("java.util")) return 2;
+                            else if (c.startsWith("java.io")) return 3;
+                            else return 4;
+                        });
+        return candidates.stream().filter(c -> c.startsWith("java.")).sorted(order).findFirst();
+    }
+
+    static Map<String, String> resolveSymbols(
+            Set<String> unresolvedSymbols, ExistingImports imports, Set<String> classPath) {
+        var result = new HashMap<String, String>();
+        for (var s : unresolvedSymbols) {
+            resolveSymbol(s, imports, classPath).ifPresent(resolved -> result.put(s, resolved));
+        }
+        return result;
+    }
+
+    // TODO this doesn't work for inner classes, eliminate
+    static String mostName(String name) {
+        var lastDot = name.lastIndexOf('.');
+        return lastDot == -1 ? "" : name.substring(0, lastDot);
+    }
+
+    // TODO this doesn't work for inner classes, eliminate
+    static String lastName(String name) {
+        int i = name.lastIndexOf('.');
+        if (i == -1) return name;
+        else return name.substring(i + 1);
+    }
+
+    static String fileName(URI uri) {
+        var parts = uri.toString().split("/");
+        if (parts.length == 0) return "";
+        return parts[parts.length - 1];
+    }
+
+    static String packageName(Path file) {
+        var packagePattern = Pattern.compile("^package +(.*);");
+        var startOfClass = Pattern.compile("^[\\w ]*class +\\w+");
+        try (var lines = FileStore.lines(file)) {
+            for (var line = lines.readLine(); line != null; line = lines.readLine()) {
+                if (startOfClass.matcher(line).find()) return "";
+                var matchPackage = packagePattern.matcher(line);
+                if (matchPackage.matches()) {
+                    var id = matchPackage.group(1);
+                    return id;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        // TODO fall back on parsing file
+        return "";
+    }
+
+    private static final Logger LOG = Logger.getLogger("main");
+}
+
+class ExistingImports {
+    /** Fully-qualified names of classes that have been imported on the source path */
+    final Set<String> classes;
+    /** Package names from star-imports like `import java.util.*` */
+    final Set<String> packages;
+
+    ExistingImports(Set<String> classes, Set<String> packages) {
+        this.classes = classes;
+        this.packages = packages;
     }
 }

@@ -21,7 +21,7 @@ public class FindReferencesTest {
         var locations = server.findReferences(params).orElse(List.of());
         var strings = new ArrayList<String>();
         for (var l : locations) {
-            var fileName = Parser.fileName(l.uri);
+            var fileName = StringSearch.fileName(l.uri);
             var line = l.range.start.line;
             strings.add(String.format("%s(%d)", fileName, line + 1));
         }

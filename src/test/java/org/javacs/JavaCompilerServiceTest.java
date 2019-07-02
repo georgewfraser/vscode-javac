@@ -80,7 +80,7 @@ public class JavaCompilerServiceTest {
             if (c.element != null) result.add(c.element.getSimpleName().toString());
             else if (c.packagePart != null) result.add(c.packagePart.name);
             else if (c.keyword != null) result.add(c.keyword);
-            else if (c.className != null) result.add(Parser.lastName(c.className.name));
+            else if (c.className != null) result.add(StringSearch.lastName(c.className.name));
             else if (c.snippet != null) result.add(c.snippet.snippet);
         }
         return result;
@@ -222,7 +222,7 @@ public class JavaCompilerServiceTest {
     private static List<String> errorStrings(List<Diagnostic<? extends JavaFileObject>> diags) {
         var strings = new ArrayList<String>();
         for (var d : diags) {
-            var file = Parser.fileName(d.getSource().toUri());
+            var file = StringSearch.fileName(d.getSource().toUri());
             var line = d.getLineNumber();
             var msg = d.getMessage(null);
             var string = String.format("%s(%d): %s", file, line, msg);

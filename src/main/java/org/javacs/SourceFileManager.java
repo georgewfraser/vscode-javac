@@ -80,8 +80,8 @@ class SourceFileManager extends ForwardingJavaFileManager<StandardJavaFileManage
     public JavaFileObject getJavaFileForInput(Location location, String className, JavaFileObject.Kind kind)
             throws IOException {
         if (location == StandardLocation.SOURCE_PATH) {
-            var packageName = Parser.mostName(className);
-            var simpleClassName = Parser.lastName(className);
+            var packageName = StringSearch.mostName(className);
+            var simpleClassName = StringSearch.lastName(className);
             for (var f : FileStore.list(packageName)) {
                 if (f.getFileName().toString().equals(simpleClassName + kind.extension)) return new SourceFileObject(f);
             }

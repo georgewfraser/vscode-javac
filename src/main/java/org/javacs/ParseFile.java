@@ -358,7 +358,8 @@ class ParseFile {
     Optional<TreePath> fuzzyFind(Ptr ptr) {
         LOG.info(
                 String.format(
-                        "...find fuzzy match of %s in %s ...", ptr, Parser.fileName(root.getSourceFile().toUri())));
+                        "...find fuzzy match of %s in %s ...",
+                        ptr, StringSearch.fileName(root.getSourceFile().toUri())));
 
         class FindPtr extends TreePathScanner<Void, Void> {
             int bestMatch = Ptr.NOT_MATCHED;

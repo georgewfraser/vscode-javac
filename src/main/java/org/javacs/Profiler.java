@@ -55,7 +55,7 @@ class Profiler implements TaskListener {
         if (files.size() <= 3) {
             var names = new StringJoiner(", ");
             for (var f : files) {
-                names.add(Parser.fileName(f));
+                names.add(StringSearch.fileName(f));
             }
             return names.toString();
         } else {

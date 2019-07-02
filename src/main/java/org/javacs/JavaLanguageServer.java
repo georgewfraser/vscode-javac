@@ -410,7 +410,7 @@ class JavaLanguageServer extends LanguageServer {
                 i.detail = "keyword";
                 i.sortText = 3 + i.label;
             } else if (c.className != null) {
-                i.label = Parser.lastName(c.className.name);
+                i.label = StringSearch.lastName(c.className.name);
                 i.kind = CompletionItemKind.Class;
                 i.detail = c.className.name;
                 if (c.className.isImported) {
@@ -534,8 +534,8 @@ class JavaLanguageServer extends LanguageServer {
                 unresolved.documentation = markdown.get();
             }
         } else if (cached.className != null) {
-            var packageName = Parser.mostName(cached.className.name);
-            var className = Parser.lastName(cached.className.name);
+            var packageName = StringSearch.mostName(cached.className.name);
+            var className = StringSearch.lastName(cached.className.name);
             var ptr = Ptr.toClass(packageName, className);
             var markdown = findDocs(ptr);
             if (markdown.isPresent()) unresolved.documentation = markdown.get();
@@ -1105,14 +1105,15 @@ class JavaLanguageServer extends LanguageServer {
         var index = cacheIndex.get(fromUri);
         if (index.hasErrors) {
             LOG.info(
-                    String.format("...%s needs to be re-indexed because it contains errors", Parser.fileName(fromUri)));
+                    String.format(
+                            "...%s needs to be re-indexed because it contains errors", StringSearch.fileName(fromUri)));
             return true;
         }
         if (index.needsUpdate(signature)) {
             LOG.info(
                     String.format(
                             "...%s needs to be re-indexed because it refers to a declaration that has changed",
-                            Parser.fileName(fromUri)));
+                            StringSearch.fileName(fromUri)));
             return true;
         }
         return false;

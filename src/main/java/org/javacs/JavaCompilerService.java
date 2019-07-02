@@ -399,7 +399,7 @@ class JavaCompilerService {
         LOG.info(String.format("...scanning %d out-of-date files for the word `%s`", outOfDate.size(), name));
         for (var file : outOfDate) {
             // TODO this needs to use open text if available
-            var found = Parser.containsWord(file, name);
+            var found = StringSearch.containsWord(file, name);
             cacheContainsWord.load(file, name, found);
         }
 
@@ -425,7 +425,7 @@ class JavaCompilerService {
         var hasImport = new ArrayList<Path>();
         for (var file : allFiles) {
             if (cacheContainsImport.needs(file, qName)) {
-                var found = Parser.containsImport(file, toPackage, toClass);
+                var found = StringSearch.containsImport(file, toPackage, toClass);
                 cacheContainsImport.load(file, qName, found);
             }
             if (cacheContainsImport.get(file, qName)) {
@@ -498,7 +498,7 @@ class JavaCompilerService {
         for (var file : files) {
             checked++;
             // First do a fast check if the query matches anything in a file
-            if (!Parser.containsWordMatching(file, query)) continue;
+            if (!StringSearch.containsWordMatching(file, query)) continue;
             // Parse the file and check class members for matches
             LOG.info(String.format("...%s contains text matches", file.getFileName()));
             var parse = Parser.parse(file);

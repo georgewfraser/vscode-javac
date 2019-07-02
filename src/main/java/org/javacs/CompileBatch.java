@@ -79,7 +79,7 @@ public class CompileBatch implements AutoCloseable {
         // Somehow, uri was not in batch
         var names = new StringJoiner(", ");
         for (var r : roots) {
-            names.add(Parser.fileName(r.getSourceFile().toUri()));
+            names.add(StringSearch.fileName(r.getSourceFile().toUri()));
         }
         throw new RuntimeException("File " + uri + " isn't in batch " + names);
     }
@@ -230,7 +230,7 @@ public class CompileBatch implements AutoCloseable {
         // Couldn't find file! Throw an error.
         var message = new StringJoiner(", ");
         for (var r : roots) {
-            message.add(Parser.fileName(r.getSourceFile().toUri()));
+            message.add(StringSearch.fileName(r.getSourceFile().toUri()));
         }
         throw new RuntimeException(file + " is not in " + message);
     }
@@ -349,11 +349,11 @@ public class CompileBatch implements AutoCloseable {
         }
         // Look at imports in other classes to help us guess how to fix imports
         // TODO cache parsed imports on a per-file basis
-        var sourcePathImports = Parser.existingImports(FileStore.all());
+        var sourcePathImports = StringSearch.existingImports(FileStore.all());
         var classes = new HashSet<String>();
         classes.addAll(parent.jdkClasses);
         classes.addAll(parent.classPathClasses);
-        var fixes = Parser.resolveSymbols(unresolved, sourcePathImports, classes);
+        var fixes = StringSearch.resolveSymbols(unresolved, sourcePathImports, classes);
         // Figure out which existing imports are actually used
         var trees = Trees.instance(borrow.task);
         var references = new HashSet<String>();
@@ -385,7 +385,7 @@ public class CompileBatch implements AutoCloseable {
         for (var i : root.getImports()) {
             var imported = i.getQualifiedIdentifier().toString();
             if (imported.endsWith(".*")) {
-                var packageName = Parser.mostName(imported);
+                var packageName = StringSearch.mostName(imported);
                 var isUsed = hasErrors || references.stream().anyMatch(r -> r.startsWith(packageName));
                 if (isUsed) qualifiedNames.add(imported);
                 else LOG.warning("There are no references to package " + imported);
@@ -591,7 +591,7 @@ public class CompileBatch implements AutoCloseable {
             var parent = p.getQualifiedName().toString();
             var subs = subPackages(parent);
             for (var sub : subs) {
-                result.add(Completion.ofPackagePart(sub, Parser.lastName(sub)));
+                result.add(Completion.ofPackagePart(sub, StringSearch.lastName(sub)));
             }
 
             return result;
@@ -802,12 +802,12 @@ public class CompileBatch implements AutoCloseable {
 
     private boolean isImported(URI uri, String qualifiedName) {
         var root = root(uri);
-        var packageName = Parser.mostName(qualifiedName);
-        var className = Parser.lastName(qualifiedName);
+        var packageName = StringSearch.mostName(qualifiedName);
+        var className = StringSearch.lastName(qualifiedName);
         for (var i : root.getImports()) {
             var importName = i.getQualifiedIdentifier().toString();
-            var importPackage = Parser.mostName(importName);
-            var importClass = Parser.lastName(importName);
+            var importPackage = StringSearch.mostName(importName);
+            var importClass = StringSearch.lastName(importName);
             if (importClass.equals("*") && importPackage.equals(packageName)) return true;
             if (importClass.equals(className) && importPackage.equals(packageName)) return true;
         }
@@ -966,7 +966,7 @@ public class CompileBatch implements AutoCloseable {
         var result = new HashSet<String>();
         Consumer<String> checkClassName =
                 name -> {
-                    var packageName = Parser.mostName(name);
+                    var packageName = StringSearch.mostName(name);
                     if (packageName.startsWith(parentPackage) && packageName.length() > parentPackage.length()) {
                         var start = parentPackage.length() + 1;
                         var end = packageName.indexOf('.', start);
@@ -1011,7 +1011,7 @@ public class CompileBatch implements AutoCloseable {
             var packageName = Objects.toString(root.getPackageName(), "");
             Predicate<String> matchesPartialName =
                     qualifiedName -> {
-                        var className = Parser.lastName(qualifiedName);
+                        var className = StringSearch.lastName(qualifiedName);
                         return matchesPartialName(className, partialName);
                     };
 
@@ -1054,7 +1054,7 @@ public class CompileBatch implements AutoCloseable {
     }
 
     private boolean isSamePackage(String className, String fromPackage) {
-        return Parser.mostName(className).equals(fromPackage);
+        return StringSearch.mostName(className).equals(fromPackage);
     }
 
     private boolean isPublicClassFile(String className) {

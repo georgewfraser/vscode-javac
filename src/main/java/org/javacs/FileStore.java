@@ -167,7 +167,7 @@ class FileStore {
     private static void readInfoFromDisk(Path file) {
         try {
             var time = Files.getLastModifiedTime(file).toInstant();
-            var packageName = Parser.packageName(file);
+            var packageName = StringSearch.packageName(file);
             javaSources.put(file, new Info(time, packageName));
         } catch (IOException e) {
             throw new RuntimeException(e);
