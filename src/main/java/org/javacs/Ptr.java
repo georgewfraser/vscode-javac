@@ -13,12 +13,12 @@ import javax.lang.model.element.*;
 import javax.lang.model.type.*;
 
 /** Ptr is a reference to a named element, that can be serialized into a String. */
-public class Ptr {
+class Ptr {
     private final String packageName, className;
     private final Optional<String> memberName;
     private final Optional<List<String>> erasedParameterTypes;
 
-    public static Ptr toClass(String packageName, String className) {
+    static Ptr toClass(String packageName, String className) {
         return new Ptr(packageName, className);
     }
 
@@ -29,7 +29,7 @@ public class Ptr {
         this.erasedParameterTypes = Optional.empty();
     }
 
-    public Ptr(String path) {
+    Ptr(String path) {
         // Split my.pkg/Class#member into my.pkg and Class#member
         var slash = path.indexOf('/');
         if (slash == -1) {
@@ -69,7 +69,7 @@ public class Ptr {
         this.erasedParameterTypes = Optional.of(List.of(params));
     }
 
-    public Ptr(Element e) {
+    Ptr(Element e) {
         var packageName = "";
         var reversedClassName = new ArrayList<CharSequence>();
         String memberName = null;
@@ -130,14 +130,14 @@ public class Ptr {
     }
 
     // TODO eliminate className() everywhere in the codebase in favor of simpleClassName() and qualifiedClassName()
-    public String qualifiedClassName() {
+    String qualifiedClassName() {
         if (packageName.isEmpty()) return className;
         return packageName + "." + className;
     }
 
-    public static final int NOT_MATCHED = 100;
+    static final int NOT_MATCHED = 100;
 
-    public int fuzzyMatch(TreePath path) {
+    int fuzzyMatch(TreePath path) {
         if (!packageName(path).equals(packageName)) return NOT_MATCHED;
         if (!simpleClassName(path).equals(className)) return NOT_MATCHED;
         // Methods
@@ -203,19 +203,9 @@ public class Ptr {
             LOG.warning(
                     String.format(
                             "Couldn't find type name for %s `%s`",
-                            type.getClass().getName(), Parser.describeTree(type)));
+                            type.getClass().getName(), ParseFile.describeTree(type)));
         }
         return find.found;
-    }
-
-    public static boolean canPoint(Element e) {
-        var inLeaf = true;
-        for (; e != null; e = e.getEnclosingElement()) {
-            var isLeaf = e instanceof ExecutableElement || e instanceof VariableElement;
-            if (inLeaf && !isLeaf) inLeaf = false;
-            if (!inLeaf && isLeaf) return false;
-        }
-        return true;
     }
 
     @Override

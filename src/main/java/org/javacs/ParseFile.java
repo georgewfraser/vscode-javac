@@ -19,6 +19,8 @@ class ParseFile {
     private static JavacTask singleFileTask(JavaCompilerService parent, URI file) {
         // TODO could eliminate the connection to parent
         parent.diags.clear();
+        // TODO the fixed cost of creating a task is greater than the cost of parsing 1 file; use reusable compiler and
+        // verify cost is lower
         return (JavacTask)
                 COMPILER.getTask(
                         null,
@@ -404,8 +406,7 @@ class ParseFile {
         if (find.found != null)
             LOG.info(
                     String.format(
-                            "...`%s` with score %d is best match",
-                            Parser.describeTree(find.found.getLeaf()), find.bestMatch));
+                            "...`%s` with score %d is best match", describeTree(find.found.getLeaf()), find.bestMatch));
         else LOG.info("...no match found");
         return Optional.ofNullable(find.found);
     }
@@ -643,6 +644,26 @@ class ParseFile {
         var find = new FindEmptyDoc();
         find.scan(root, null);
         return Objects.requireNonNull(find.found);
+    }
+
+    static String describeTree(Tree leaf) {
+        if (leaf instanceof MethodTree) {
+            var method = (MethodTree) leaf;
+            var params = new StringJoiner(", ");
+            for (var p : method.getParameters()) {
+                params.add(p.getType() + " " + p.getName());
+            }
+            return method.getName() + "(" + params + ")";
+        }
+        if (leaf instanceof ClassTree) {
+            var cls = (ClassTree) leaf;
+            return "class " + cls.getSimpleName();
+        }
+        if (leaf instanceof BlockTree) {
+            var block = (BlockTree) leaf;
+            return String.format("{ ...%d lines... }", block.getStatements().size());
+        }
+        return leaf.toString();
     }
 
     private static final Logger LOG = Logger.getLogger("main");
