@@ -163,6 +163,11 @@ class ParseFile {
         return range(task, contents, path);
     }
 
+    Optional<Location> location(TreePath path) {
+        var uri = root.getSourceFile().toUri();
+        return range(task, contents, path).map(range -> new Location(uri, range));
+    }
+
     Optional<CompletionContext> completionContext(int line, int character) {
         LOG.info(
                 String.format(
@@ -503,14 +508,13 @@ class ParseFile {
         return Optional.of(range);
     }
 
-    List<TreePath> documentSymbols() {
+    List<SymbolInformation> documentSymbols() {
         return findSymbolsMatching("");
     }
 
-    List<TreePath> findSymbolsMatching(String query) {
+    List<SymbolInformation> findSymbolsMatching(String query) {
+        List<TreePath> found = new ArrayList<>();
         class Find extends TreePathScanner<Void, Void> {
-            List<TreePath> found = new ArrayList<>();
-
             void accept(TreePath path) {
                 var node = path.getLeaf();
                 if (node instanceof ClassTree) {
@@ -536,12 +540,83 @@ class ParseFile {
                 return null;
             }
 
-            List<TreePath> run() {
+            void run() {
                 scan(root, null);
-                return found;
             }
         }
-        return new Find().run();
+        new Find().run();
+        var symbols = new ArrayList<SymbolInformation>();
+        for (var path : found) {
+            asSymbolInformation(path, symbols);
+        }
+        return symbols;
+    }
+
+    private void asSymbolInformation(TreePath path, List<SymbolInformation> acc) {
+        var l = location(path);
+        if (l.isEmpty()) return;
+        var i = new SymbolInformation();
+        var t = path.getLeaf();
+        i.kind = asSymbolKind(t.getKind());
+        i.name = symbolName(t);
+        i.containerName = containerName(path);
+        i.location = l.get();
+        acc.add(i);
+    }
+
+    private static Integer asSymbolKind(Tree.Kind k) {
+        switch (k) {
+            case ANNOTATION_TYPE:
+            case CLASS:
+                return SymbolKind.Class;
+            case ENUM:
+                return SymbolKind.Enum;
+            case INTERFACE:
+                return SymbolKind.Interface;
+            case METHOD:
+                return SymbolKind.Method;
+            case TYPE_PARAMETER:
+                return SymbolKind.TypeParameter;
+            case VARIABLE:
+                // This method is used for symbol-search functionality,
+                // where we only return fields, not local variables
+                return SymbolKind.Field;
+            default:
+                return null;
+        }
+    }
+
+    private static String containerName(TreePath path) {
+        var parent = path.getParentPath();
+        while (parent != null) {
+            var t = parent.getLeaf();
+            if (t instanceof ClassTree) {
+                var c = (ClassTree) t;
+                return c.getSimpleName().toString();
+            } else if (t instanceof CompilationUnitTree) {
+                var c = (CompilationUnitTree) t;
+                return Objects.toString(c.getPackageName(), "");
+            } else {
+                parent = parent.getParentPath();
+            }
+        }
+        return null;
+    }
+
+    private static String symbolName(Tree t) {
+        if (t instanceof ClassTree) {
+            var c = (ClassTree) t;
+            return c.getSimpleName().toString();
+        } else if (t instanceof MethodTree) {
+            var m = (MethodTree) t;
+            return m.getName().toString();
+        } else if (t instanceof VariableTree) {
+            var v = (VariableTree) t;
+            return v.getName().toString();
+        } else {
+            LOG.warning("Don't know how to create SymbolInformation from " + t);
+            return "???";
+        }
     }
 
     private static final DocCommentTree EMPTY_DOC = makeEmptyDoc();

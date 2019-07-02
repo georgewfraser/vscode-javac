@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.lang.model.element.*;
 import javax.tools.*;
+import org.javacs.lsp.SymbolInformation;
 
 // TODO eliminate uses of URI in favor of Path
 class JavaCompilerService {
@@ -488,10 +489,10 @@ class JavaCompilerService {
         return Optional.empty();
     }
 
-    List<TreePath> findSymbols(String query, int limit) {
+    List<SymbolInformation> findSymbols(String query, int limit) {
         LOG.info(String.format("Searching for `%s`...", query));
 
-        var result = new ArrayList<TreePath>();
+        var result = new ArrayList<SymbolInformation>();
         var files = FileStore.all();
         var checked = 0;
         var parsed = 0;

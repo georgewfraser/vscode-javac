@@ -7,7 +7,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.*;
 import javax.tools.*;
-import org.javacs.lsp.*;
 
 class Parser {
 
@@ -48,20 +47,6 @@ class Parser {
     private static void onError(javax.tools.Diagnostic<? extends JavaFileObject> err) {
         // Too noisy, this only comes up in parse tasks which tend to be less important
         // LOG.warning(err.getMessage(Locale.getDefault()));
-    }
-
-    static Location location(TreePath p) {
-        // This is very questionable, will this Trees object actually work?
-        var task = parseTask(p.getCompilationUnit().getSourceFile());
-        var trees = Trees.instance(task);
-        var pos = trees.getSourcePositions();
-        var cu = p.getCompilationUnit();
-        var lines = cu.getLineMap();
-        long start = pos.getStartPosition(cu, p.getLeaf()), end = pos.getEndPosition(cu, p.getLeaf());
-        int startLine = (int) lines.getLineNumber(start) - 1, startCol = (int) lines.getColumnNumber(start) - 1;
-        int endLine = (int) lines.getLineNumber(end) - 1, endCol = (int) lines.getColumnNumber(end) - 1;
-        var dUri = cu.getSourceFile().toUri();
-        return new Location(dUri, new Range(new Position(startLine, startCol), new Position(endLine, endCol)));
     }
 
     static String describeTree(Tree leaf) {
