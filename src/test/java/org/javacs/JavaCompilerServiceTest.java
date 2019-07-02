@@ -282,7 +282,7 @@ public class JavaCompilerServiceTest {
 
     @Test
     public void matchesPartialName() {
-        assertTrue(CompileBatch.matchesPartialName("foobar", "foo"));
-        assertFalse(CompileBatch.matchesPartialName("foo", "foobar"));
+        assertTrue(StringSearch.matchesPartialName("foobar", "foo"));
+        assertFalse(StringSearch.matchesPartialName("foo", "foobar"));
     }
 }

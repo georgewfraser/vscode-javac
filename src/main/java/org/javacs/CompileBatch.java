@@ -792,14 +792,6 @@ public class CompileBatch implements AutoCloseable {
         return result;
     }
 
-    static boolean matchesPartialName(CharSequence candidate, CharSequence partialName) {
-        if (candidate.length() < partialName.length()) return false;
-        for (int i = 0; i < partialName.length(); i++) {
-            if (candidate.charAt(i) != partialName.charAt(i)) return false;
-        }
-        return true;
-    }
-
     private boolean isImported(URI uri, String qualifiedName) {
         var root = root(uri);
         var packageName = StringSearch.mostName(qualifiedName);
@@ -897,7 +889,7 @@ public class CompileBatch implements AutoCloseable {
                 for (var thisMember : thisElement.getEnclosedElements()) {
                     if (isStatic(start) && !isStatic(thisMember)) continue;
                     if (thisMember.getSimpleName().contentEquals("<init>")) continue;
-                    if (!matchesPartialName(thisMember.getSimpleName(), partialName)) continue;
+                    if (!StringSearch.matchesPartialName(thisMember.getSimpleName(), partialName)) continue;
 
                     // Check if member is accessible from original scope
                     if (trees.isAccessible(start, thisMember, thisDeclaredType)) {
@@ -910,7 +902,7 @@ public class CompileBatch implements AutoCloseable {
             void walkLocals(Scope s) {
                 try {
                     for (var e : s.getLocalElements()) {
-                        if (matchesPartialName(e.getSimpleName(), partialName)) {
+                        if (StringSearch.matchesPartialName(e.getSimpleName(), partialName)) {
                             if (e instanceof TypeElement) {
                                 var te = (TypeElement) e;
                                 if (trees.isAccessible(start, te)) result.add(te);
@@ -982,7 +974,7 @@ public class CompileBatch implements AutoCloseable {
 
     private static void addKeywords(String[] keywords, String partialName, List<Completion> result) {
         for (var k : keywords) {
-            if (matchesPartialName(k, partialName)) {
+            if (StringSearch.matchesPartialName(k, partialName)) {
                 result.add(Completion.ofKeyword(k));
             }
         }
@@ -1012,7 +1004,7 @@ public class CompileBatch implements AutoCloseable {
             Predicate<String> matchesPartialName =
                     qualifiedName -> {
                         var className = StringSearch.lastName(qualifiedName);
-                        return matchesPartialName(className, partialName);
+                        return StringSearch.matchesPartialName(className, partialName);
                     };
 
             // Check JDK
@@ -1045,7 +1037,7 @@ public class CompileBatch implements AutoCloseable {
                 var otherPackageName = FileStore.packageName(file);
                 var samePackage = otherPackageName.equals(packageName) || otherPackageName.isEmpty();
                 // If file is in a different package, only a public class with the same name as the file is accessible
-                var maybePublic = matchesPartialName(file.getFileName().toString(), partialName);
+                var maybePublic = StringSearch.matchesPartialName(file.getFileName().toString(), partialName);
                 if (samePackage || maybePublic) {
                     result.addAll(accessibleClasses(uri, file, partialName, packageName, classPathNames));
                 }
@@ -1084,22 +1076,10 @@ public class CompileBatch implements AutoCloseable {
 
     private List<Completion> accessibleClasses(
             URI fromUri, Path toFile, String partialName, String fromPackage, Set<String> skip) {
-        var parse = Parser.parse(toFile);
-        var toPackage = Objects.toString(parse.getPackageName(), "");
-        var samePackage = fromPackage.equals(toPackage) || toPackage.isEmpty();
+        var parse = parent.parseFile(toFile.toUri());
+        var classNames = parse.accessibleClasses(partialName, fromPackage);
         var result = new ArrayList<Completion>();
-        for (var t : parse.getTypeDecls()) {
-            if (!(t instanceof ClassTree)) continue;
-            var cls = (ClassTree) t;
-            // If class is not accessible, skip it
-            var isPublic = cls.getModifiers().getFlags().contains(Modifier.PUBLIC);
-            if (!samePackage && !isPublic) continue;
-            // If class doesn't match partialName, skip it
-            var name = cls.getSimpleName().toString();
-            if (!matchesPartialName(name, partialName)) continue;
-            if (parse.getPackageName() != null) {
-                name = parse.getPackageName() + "." + name;
-            }
+        for (var name : classNames) {
             // If class was already autocompleted using the classpath, skip it
             if (skip.contains(name)) continue;
             // Otherwise, add this name!
@@ -1118,7 +1098,7 @@ public class CompileBatch implements AutoCloseable {
             var el = (TypeElement) trees.getElement(path);
             if (id.getIdentifier().contentEquals("*")) {
                 for (var member : el.getEnclosedElements()) {
-                    if (matchesPartialName(member.getSimpleName(), partialName)
+                    if (StringSearch.matchesPartialName(member.getSimpleName(), partialName)
                             && member.getModifiers().contains(Modifier.STATIC)) {
                         result.add(member);
                         if (tooManyItems(result.size())) return result;
@@ -1126,7 +1106,7 @@ public class CompileBatch implements AutoCloseable {
                 }
             } else {
                 for (var member : el.getEnclosedElements()) {
-                    if (matchesPartialName(member.getSimpleName(), partialName)
+                    if (StringSearch.matchesPartialName(member.getSimpleName(), partialName)
                             && member.getModifiers().contains(Modifier.STATIC)) {
                         result.add(member);
                         if (tooManyItems(result.size())) return result;

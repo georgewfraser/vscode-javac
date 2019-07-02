@@ -675,6 +675,27 @@ class ParseFile {
         return leaf.toString();
     }
 
+    List<String> accessibleClasses(String partialName, String fromPackage) {
+        var toPackage = Objects.toString(root.getPackageName(), "");
+        var samePackage = fromPackage.equals(toPackage) || toPackage.isEmpty();
+        var result = new ArrayList<String>();
+        for (var t : root.getTypeDecls()) {
+            if (!(t instanceof ClassTree)) continue;
+            var cls = (ClassTree) t;
+            // If class is not accessible, skip it
+            var isPublic = cls.getModifiers().getFlags().contains(Modifier.PUBLIC);
+            if (!samePackage && !isPublic) continue;
+            // If class doesn't match partialName, skip it
+            var name = cls.getSimpleName().toString();
+            if (!StringSearch.matchesPartialName(name, partialName)) continue;
+            if (root.getPackageName() != null) {
+                name = root.getPackageName() + "." + name;
+            }
+            result.add(name);
+        }
+        return result;
+    }
+
     private static final Logger LOG = Logger.getLogger("main");
 }
 
