@@ -12,7 +12,7 @@ import javax.lang.model.element.*;
 import javax.tools.JavaCompiler;
 import org.javacs.lsp.*;
 
-public class ParseFile {
+class ParseFile {
     private static final JavaCompiler COMPILER = ServiceLoader.load(JavaCompiler.class).iterator().next();
 
     /** Create a task that compiles a single file */
@@ -65,7 +65,7 @@ public class ParseFile {
         this.root = root;
     }
 
-    public boolean isTestMethod(TreePath path) {
+    boolean isTestMethod(TreePath path) {
         var leaf = path.getLeaf();
         if (!(leaf instanceof MethodTree)) return false;
         var method = (MethodTree) leaf;
@@ -82,7 +82,7 @@ public class ParseFile {
         return false;
     }
 
-    public boolean isTestClass(TreePath path) {
+    boolean isTestClass(TreePath path) {
         var leaf = path.getLeaf();
         if (!(leaf instanceof ClassTree)) return false;
         var cls = (ClassTree) leaf;
@@ -92,7 +92,7 @@ public class ParseFile {
         return false;
     }
 
-    public boolean isOverride(TreePath path) {
+    boolean isOverride(TreePath path) {
         var leaf = path.getLeaf();
         if (!(leaf instanceof MethodTree)) return false;
         var method = (MethodTree) leaf;
@@ -109,7 +109,7 @@ public class ParseFile {
         return false;
     }
 
-    public List<TreePath> declarations() {
+    List<TreePath> declarations() {
         return declarations(root);
     }
 
@@ -159,11 +159,11 @@ public class ParseFile {
         return found;
     }
 
-    public Optional<Range> range(TreePath path) {
+    Optional<Range> range(TreePath path) {
         return range(task, contents, path);
     }
 
-    public Optional<CompletionContext> completionContext(int line, int character) {
+    Optional<CompletionContext> completionContext(int line, int character) {
         LOG.info(
                 String.format(
                         "Finding completion position near %s(%d,%d)...",
@@ -321,7 +321,7 @@ public class ParseFile {
         return Optional.of(find.result);
     }
 
-    public FoldingRanges foldingRanges() {
+    FoldingRanges foldingRanges() {
         var imports = new ArrayList<TreePath>();
         var blocks = new ArrayList<TreePath>();
         // TODO find comment trees
@@ -350,12 +350,12 @@ public class ParseFile {
         return new FoldingRanges(imports, blocks, comments);
     }
 
-    public SourcePositions sourcePositions() {
+    SourcePositions sourcePositions() {
         return trees.getSourcePositions();
     }
 
     /** Find and source code associated with a ptr */
-    public Optional<TreePath> fuzzyFind(Ptr ptr) {
+    Optional<TreePath> fuzzyFind(Ptr ptr) {
         LOG.info(
                 String.format(
                         "...find fuzzy match of %s in %s ...", ptr, Parser.fileName(root.getSourceFile().toUri())));
@@ -404,7 +404,7 @@ public class ParseFile {
         return Optional.ofNullable(find.found);
     }
 
-    public DocCommentTree doc(TreePath path) {
+    DocCommentTree doc(TreePath path) {
         // Find ptr in the file
         // Find the documentation attached to el
         var docs = DocTrees.instance(task);
@@ -502,7 +502,7 @@ public class ParseFile {
         return Optional.of(range);
     }
 
-    public List<TreePath> documentSymbols() {
+    List<TreePath> documentSymbols() {
         return Parser.findSymbolsMatching(root, "");
     }
 
