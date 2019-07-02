@@ -501,8 +501,8 @@ class JavaCompilerService {
             if (!StringSearch.containsWordMatching(file, query)) continue;
             // Parse the file and check class members for matches
             LOG.info(String.format("...%s contains text matches", file.getFileName()));
-            var parse = Parser.parse(file);
-            var symbols = Parser.findSymbolsMatching(parse, query);
+            var parse = parseFile(file.toUri());
+            var symbols = parse.findSymbolsMatching(query);
             parsed++;
             // If we confirm matches, add them to the results
             if (symbols.size() > 0) LOG.info(String.format("...found %d occurrences", symbols.size()));

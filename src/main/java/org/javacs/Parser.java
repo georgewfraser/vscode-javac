@@ -50,43 +50,6 @@ class Parser {
         // LOG.warning(err.getMessage(Locale.getDefault()));
     }
 
-    static List<TreePath> findSymbolsMatching(CompilationUnitTree parse, String query) {
-        class Find extends TreePathScanner<Void, Void> {
-            List<TreePath> found = new ArrayList<>();
-
-            void accept(TreePath path) {
-                var node = path.getLeaf();
-                if (node instanceof ClassTree) {
-                    var c = (ClassTree) node;
-                    if (StringSearch.matchesTitleCase(c.getSimpleName(), query)) found.add(path);
-                } else if (node instanceof MethodTree) {
-                    var m = (MethodTree) node;
-                    if (StringSearch.matchesTitleCase(m.getName(), query)) found.add(path);
-                } else if (node instanceof VariableTree) {
-                    var v = (VariableTree) node;
-                    if (StringSearch.matchesTitleCase(v.getName(), query)) found.add(path);
-                }
-            }
-
-            @Override
-            public Void visitClass(ClassTree node, Void nothing) {
-                super.visitClass(node, nothing);
-                accept(getCurrentPath());
-                for (var t : node.getMembers()) {
-                    var child = new TreePath(getCurrentPath(), t);
-                    accept(child);
-                }
-                return null;
-            }
-
-            List<TreePath> run() {
-                scan(parse, null);
-                return found;
-            }
-        }
-        return new Find().run();
-    }
-
     static Location location(TreePath p) {
         // This is very questionable, will this Trees object actually work?
         var task = parseTask(p.getCompilationUnit().getSourceFile());

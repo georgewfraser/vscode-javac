@@ -504,7 +504,44 @@ class ParseFile {
     }
 
     List<TreePath> documentSymbols() {
-        return Parser.findSymbolsMatching(root, "");
+        return findSymbolsMatching("");
+    }
+
+    List<TreePath> findSymbolsMatching(String query) {
+        class Find extends TreePathScanner<Void, Void> {
+            List<TreePath> found = new ArrayList<>();
+
+            void accept(TreePath path) {
+                var node = path.getLeaf();
+                if (node instanceof ClassTree) {
+                    var c = (ClassTree) node;
+                    if (StringSearch.matchesTitleCase(c.getSimpleName(), query)) found.add(path);
+                } else if (node instanceof MethodTree) {
+                    var m = (MethodTree) node;
+                    if (StringSearch.matchesTitleCase(m.getName(), query)) found.add(path);
+                } else if (node instanceof VariableTree) {
+                    var v = (VariableTree) node;
+                    if (StringSearch.matchesTitleCase(v.getName(), query)) found.add(path);
+                }
+            }
+
+            @Override
+            public Void visitClass(ClassTree node, Void nothing) {
+                super.visitClass(node, nothing);
+                accept(getCurrentPath());
+                for (var t : node.getMembers()) {
+                    var child = new TreePath(getCurrentPath(), t);
+                    accept(child);
+                }
+                return null;
+            }
+
+            List<TreePath> run() {
+                scan(root, null);
+                return found;
+            }
+        }
+        return new Find().run();
     }
 
     private static final DocCommentTree EMPTY_DOC = makeEmptyDoc();
