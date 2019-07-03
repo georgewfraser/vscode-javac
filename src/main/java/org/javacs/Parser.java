@@ -1,10 +1,7 @@
 package org.javacs;
 
-import com.sun.source.tree.*;
 import com.sun.source.util.*;
-import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
 import java.util.*;
 import javax.tools.*;
 
@@ -27,18 +24,6 @@ class Parser {
                         Collections.emptyList(),
                         null,
                         Collections.singletonList(file));
-    }
-
-    static CompilationUnitTree parse(Path source) {
-        try {
-            // TODO should get current contents of open files from FileStore
-            JavaFileObject file =
-                    fileManager.getJavaFileObjectsFromFiles(Collections.singleton(source.toFile())).iterator().next();
-            var task = parseTask(file);
-            return task.parse().iterator().next();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private static void onError(javax.tools.Diagnostic<? extends JavaFileObject> err) {

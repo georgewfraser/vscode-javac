@@ -799,6 +799,42 @@ class ParseFile {
         }
     }
 
+    boolean mightContainDefinition(Element to) {
+        var findName = simpleName(to);
+        class Found extends RuntimeException {}
+        class FindMethod extends TreePathScanner<Void, Void> {
+            private Name className;
+
+            @Override
+            public Void visitClass(ClassTree t, Void __) {
+                var prev = className;
+                className = t.getSimpleName();
+                super.visitClass(t, null);
+                className = prev;
+                return null;
+            }
+
+            @Override
+            public Void visitMethod(MethodTree t, Void __) {
+                // TODO try to disprove that this is a reference by looking at obvious special cases, like is the
+                // simple name of the type different?
+                var match =
+                        t.getName().contentEquals(findName)
+                                || t.getName().contentEquals("<init>") && className.contentEquals(findName);
+                if (match) {
+                    throw new Found();
+                }
+                return super.visitMethod(t, null);
+            }
+        }
+        try {
+            new FindMethod().scan(root, null);
+        } catch (Found __) {
+            return true;
+        }
+        return false;
+    }
+
     static CharSequence simpleName(Element e) {
         if (e.getSimpleName().contentEquals("<init>")) {
             return e.getEnclosingElement().getSimpleName();

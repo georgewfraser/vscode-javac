@@ -127,47 +127,21 @@ class JavaCompilerService {
 
         if (to instanceof ExecutableElement) {
             var allFiles = possibleFiles(to);
-
             // TODO this needs to use open text if available
             // Check if the file contains the name of `to`
             var hasWord = containsWord(allFiles, to);
             // Parse each file and check if the syntax tree is consistent with a definition of `to`
             // This produces some false positives, but parsing is much faster than compiling,
             // so it's an effective optimization
+            var matches = new HashSet<URI>();
+            for (var file : hasWord) {
+                if (parseFile(file.toUri()).mightContainDefinition(to)) {
+                    matches.add(file.toUri());
+                }
+            }
             var findName = ParseFile.simpleName(to);
-            var checkTree = new HashSet<URI>();
-            class FindMethod extends TreePathScanner<Void, Void> {
-                private Name className;
-
-                @Override
-                public Void visitClass(ClassTree t, Void __) {
-                    var prev = className;
-                    className = t.getSimpleName();
-                    super.visitClass(t, null);
-                    className = prev;
-                    return null;
-                }
-
-                @Override
-                public Void visitMethod(MethodTree t, Void __) {
-                    // TODO try to disprove that this is a reference by looking at obvious special cases, like is the
-                    // simple name of the type different?
-                    var match =
-                            t.getName().contentEquals(findName)
-                                    || t.getName().contentEquals("<init>") && className.contentEquals(findName);
-                    if (match) {
-                        var uri = getCurrentPath().getCompilationUnit().getSourceFile().toUri();
-                        checkTree.add(uri);
-                    }
-                    return super.visitMethod(t, null);
-                }
-            }
-            for (var f : hasWord) {
-                var root = Parser.parse(f);
-                new FindMethod().scan(root, null);
-            }
-            LOG.info(String.format("...%d files contain method `%s`", checkTree.size(), findName));
-            return checkTree;
+            LOG.info(String.format("...%d files contain method `%s`", matches.size(), findName));
+            return matches;
         } else {
             var files = new HashSet<URI>();
             declaringFile(to).ifPresent(files::add);
