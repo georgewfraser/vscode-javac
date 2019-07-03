@@ -134,7 +134,7 @@ class JavaCompilerService {
             // Parse each file and check if the syntax tree is consistent with a definition of `to`
             // This produces some false positives, but parsing is much faster than compiling,
             // so it's an effective optimization
-            var findName = simpleName(to);
+            var findName = ParseFile.simpleName(to);
             var checkTree = new HashSet<URI>();
             class FindMethod extends TreePathScanner<Void, Void> {
                 private Name className;
@@ -186,90 +186,27 @@ class JavaCompilerService {
             return set;
         }
 
-        var findName = simpleName(to);
+        var findName = ParseFile.simpleName(to);
         var isField = to instanceof VariableElement && to.getEnclosingElement() instanceof TypeElement;
         var isType = to instanceof TypeElement;
-        if (isField || isType) {
+        var isMethod = to instanceof ExecutableElement;
+        if (isField || isType || isMethod) {
             LOG.info(String.format("...find identifiers named `%s`", findName));
-            class FindVar extends TreePathScanner<Void, Set<URI>> {
-                void add(Set<URI> found) {
-                    var uri = getCurrentPath().getCompilationUnit().getSourceFile().toUri();
-                    found.add(uri);
-                }
-
-                boolean method() {
-                    var leaf = getCurrentPath().getLeaf();
-                    var parent = getCurrentPath().getParentPath().getLeaf();
-                    if (parent instanceof MethodInvocationTree) {
-                        var method = (MethodInvocationTree) parent;
-                        return method.getMethodSelect() == leaf;
-                    }
-                    return false;
-                }
-
-                @Override
-                public Void visitIdentifier(IdentifierTree t, Set<URI> found) {
-                    // TODO try to disprove that this is a reference by looking at obvious special cases, like is the
-                    // simple name of the type different?
-                    if (t.getName().contentEquals(findName) && !method()) add(found);
-                    return super.visitIdentifier(t, found);
-                }
-
-                @Override
-                public Void visitMemberSelect(MemberSelectTree t, Set<URI> found) {
-                    if (t.getIdentifier().contentEquals(findName) && !method()) add(found);
-                    return super.visitMemberSelect(t, found);
+            var allFiles = possibleFiles(to);
+            // TODO this needs to use open text if available
+            // Check if the file contains the name of `to`
+            var hasWord = containsWord(allFiles, to);
+            // You can't reference a TypeElement without importing it
+            if (to instanceof TypeElement) {
+                hasWord = containsImport(hasWord, (TypeElement) to);
+            }
+            var matches = new HashSet<URI>();
+            for (var file : hasWord) {
+                if (parseFile(file.toUri()).mightReference(to)) {
+                    matches.add(file.toUri());
                 }
             }
-            return scanForPotentialReferences(to, new FindVar());
-        } else if (to instanceof ExecutableElement) {
-            LOG.info(String.format("...find method calls named `%s`", findName));
-            class FindMethod extends TreePathScanner<Void, Set<URI>> {
-                void add(Set<URI> found) {
-                    var uri = getCurrentPath().getCompilationUnit().getSourceFile().toUri();
-                    found.add(uri);
-                }
-
-                boolean isName(Tree t) {
-                    if (t instanceof MemberSelectTree) {
-                        var select = (MemberSelectTree) t;
-                        return select.getIdentifier().contentEquals(findName);
-                    }
-                    if (t instanceof IdentifierTree) {
-                        var id = (IdentifierTree) t;
-                        return id.getName().contentEquals(findName);
-                    }
-                    if (t instanceof ParameterizedTypeTree) {
-                        var param = (ParameterizedTypeTree) t;
-                        return isName(param.getType());
-                    }
-                    return false;
-                }
-
-                @Override
-                public Void visitMethodInvocation(MethodInvocationTree t, Set<URI> found) {
-                    // TODO try to disprove that this is a reference by looking at obvious special cases, like is the
-                    // simple name of the type different?
-                    var method = t.getMethodSelect();
-                    if (isName(method)) add(found);
-                    // Check other parts
-                    return super.visitMethodInvocation(t, found);
-                }
-
-                @Override
-                public Void visitMemberReference(MemberReferenceTree t, Set<URI> found) {
-                    if (t.getName().contentEquals(findName)) add(found);
-                    return super.visitMemberReference(t, found);
-                }
-
-                @Override
-                public Void visitNewClass(NewClassTree t, Set<URI> found) {
-                    var cls = t.getIdentifier();
-                    if (isName(cls)) add(found);
-                    return super.visitNewClass(t, found);
-                }
-            }
-            return scanForPotentialReferences(to, new FindMethod());
+            return matches;
         } else {
             // Fields, type parameters can only be referenced from within the same file
             LOG.info(String.format("...references to `%s` must be in the same file", to));
@@ -292,40 +229,8 @@ class JavaCompilerService {
         }
     }
 
-    private static CharSequence simpleName(Element e) {
-        if (e.getSimpleName().contentEquals("<init>")) {
-            return e.getEnclosingElement().getSimpleName();
-        }
-        return e.getSimpleName();
-    }
-
     private boolean isPackagePrivate(Element to) {
         return !to.getModifiers().contains(Modifier.PROTECTED) && !to.getModifiers().contains(Modifier.PUBLIC);
-    }
-
-    private Set<URI> scanForPotentialReferences(Element to, TreePathScanner<Void, Set<URI>> scan) {
-        var allFiles = possibleFiles(to);
-
-        // TODO this needs to use open text if available
-        // Check if the file contains the name of `to`
-        var hasWord = containsWord(allFiles, to);
-
-        // You can't reference a TypeElement without importing it
-        if (to instanceof TypeElement) {
-            hasWord = containsImport(hasWord, (TypeElement) to);
-        }
-
-        // Parse each file and check if the syntax tree is consistent with a definition of `to`
-        // This produces some false positives, but parsing is much faster than compiling,
-        // so it's an effective optimization
-        var found = new HashSet<URI>();
-        for (var f : hasWord) {
-            var root = Parser.parse(f);
-            scan.scan(root, found);
-        }
-        LOG.info(String.format("...%d files contain matching syntax", found.size()));
-
-        return found;
     }
 
     private Optional<URI> declaringFile(Element e) {
