@@ -28,14 +28,14 @@ public class BenchmarkParser {
 
     @Benchmark
     public void parse(CompilerState state) {
-        ParseFile.parseFile(state.file.toUri());
+        Parser.parseFile(state.file.toUri());
     }
 
     public static void main(String[] args) {
         var state = new CompilerState();
         state.setup();
         while (true) {
-            ParseFile.parseFile(state.file.toUri());
+            Parser.parseFile(state.file.toUri());
         }
     }
 

@@ -16,26 +16,26 @@ import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import org.javacs.lsp.*;
 
-class ParseFile {
+class Parser {
     private static final JavaCompiler COMPILER = ServiceLoader.load(JavaCompiler.class).iterator().next();
     private static final StandardJavaFileManager FILE_MANAGER =
-            COMPILER.getStandardFileManager(ParseFile::ignoreError, null, null);
+            COMPILER.getStandardFileManager(Parser::ignoreError, null, null);
 
     /** Create a task that compiles a single file */
     private static JavacTask singleFileTask(JavaFileObject file) {
         return (JavacTask)
-                COMPILER.getTask(null, FILE_MANAGER, ParseFile::ignoreError, List.of(), List.of(), List.of(file));
+                COMPILER.getTask(null, FILE_MANAGER, Parser::ignoreError, List.of(), List.of(), List.of(file));
     }
 
     private final String contents;
     private final JavacTask task;
     private final CompilationUnitTree root;
 
-    private ParseFile(URI file) {
+    private Parser(URI file) {
         this(new SourceFileObject(file));
     }
 
-    private ParseFile(JavaFileObject file) {
+    private Parser(JavaFileObject file) {
         Objects.requireNonNull(file);
 
         try {
@@ -51,12 +51,12 @@ class ParseFile {
         }
     }
 
-    static ParseFile parseFile(URI file) {
-        return new ParseFile(file);
+    static Parser parseFile(URI file) {
+        return new Parser(file);
     }
 
-    static ParseFile parseJavaFileObject(JavaFileObject file) {
-        return new ParseFile(file);
+    static Parser parseJavaFileObject(JavaFileObject file) {
+        return new Parser(file);
     }
 
     boolean isTestMethod(TreePath path) {
@@ -681,13 +681,13 @@ class ParseFile {
 
     private static DocCommentTree makeEmptyDoc() {
         var file = new SourceFileObject(URI.create("file:///Foo.java"), "/** */ class Foo { }", Instant.now());
-        var fileManager = COMPILER.getStandardFileManager(ParseFile::ignoreError, null, Charset.defaultCharset());
+        var fileManager = COMPILER.getStandardFileManager(Parser::ignoreError, null, Charset.defaultCharset());
         var task =
                 (JavacTask)
                         COMPILER.getTask(
                                 null,
                                 fileManager,
-                                ParseFile::ignoreError,
+                                Parser::ignoreError,
                                 List.of(),
                                 null,
                                 Collections.singletonList(file));

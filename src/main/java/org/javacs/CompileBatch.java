@@ -287,12 +287,12 @@ public class CompileBatch implements AutoCloseable {
 
     /**
      * Find all elements in `file` that get turned into code-lenses. This needs to match the result of
-     * `ParseFile#declarations`
+     * `Parser#declarations`
      */
     public List<Element> declarations(URI file) {
         for (var r : roots) {
             if (!r.getSourceFile().toUri().equals(file)) continue;
-            var paths = ParseFile.declarations(r);
+            var paths = Parser.declarations(r);
             var els = new ArrayList<Element>();
             for (var p : paths) {
                 var e = trees.getElement(p);
@@ -332,7 +332,7 @@ public class CompileBatch implements AutoCloseable {
     public Optional<Range> range(TreePath path) {
         var uri = path.getCompilationUnit().getSourceFile().toUri();
         var contents = FileStore.contents(uri);
-        return ParseFile.range(borrow.task, contents, path);
+        return Parser.range(borrow.task, contents, path);
     }
 
     public SourcePositions sourcePositions() {
@@ -1151,7 +1151,7 @@ public class CompileBatch implements AutoCloseable {
 
     private List<Completion> accessibleClasses(
             URI fromUri, Path toFile, String partialName, String fromPackage, Set<String> skip) {
-        var parse = ParseFile.parseFile(toFile.toUri());
+        var parse = Parser.parseFile(toFile.toUri());
         var classNames = parse.accessibleClasses(partialName, fromPackage);
         var result = new ArrayList<Completion>();
         for (var name : classNames) {

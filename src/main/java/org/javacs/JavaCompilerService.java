@@ -84,7 +84,7 @@ class JavaCompilerService {
     }
 
     CompileBatch compileFocus(URI uri, int line, int character) {
-        var contents = ParseFile.parseFile(uri).prune(line, character);
+        var contents = Parser.parseFile(uri).prune(line, character);
         var file = new SourceFileObject(uri, contents, Instant.now());
         return compileBatch(List.of(file));
     }
@@ -127,11 +127,11 @@ class JavaCompilerService {
             // so it's an effective optimization
             var matches = new HashSet<URI>();
             for (var file : hasWord) {
-                if (ParseFile.parseFile(file.toUri()).mightContainDefinition(to)) {
+                if (Parser.parseFile(file.toUri()).mightContainDefinition(to)) {
                     matches.add(file.toUri());
                 }
             }
-            var findName = ParseFile.simpleName(to);
+            var findName = Parser.simpleName(to);
             LOG.info(String.format("...%d files contain method `%s`", matches.size(), findName));
             return matches;
         } else {
@@ -152,7 +152,7 @@ class JavaCompilerService {
             return set;
         }
 
-        var findName = ParseFile.simpleName(to);
+        var findName = Parser.simpleName(to);
         var isField = to instanceof VariableElement && to.getEnclosingElement() instanceof TypeElement;
         var isType = to instanceof TypeElement;
         var isMethod = to instanceof ExecutableElement;
@@ -168,7 +168,7 @@ class JavaCompilerService {
             }
             var matches = new HashSet<URI>();
             for (var file : hasWord) {
-                if (ParseFile.parseFile(file.toUri()).mightReference(to)) {
+                if (Parser.parseFile(file.toUri()).mightReference(to)) {
                     matches.add(file.toUri());
                 }
             }
@@ -377,7 +377,7 @@ class JavaCompilerService {
             if (!StringSearch.containsWordMatching(file, query)) continue;
             // Parse the file and check class members for matches
             LOG.info(String.format("...%s contains text matches", file.getFileName()));
-            var parse = ParseFile.parseFile(file.toUri());
+            var parse = Parser.parseFile(file.toUri());
             var symbols = parse.findSymbolsMatching(query);
             parsed++;
             // If we confirm matches, add them to the results

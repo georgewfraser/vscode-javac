@@ -203,7 +203,7 @@ class Ptr {
             LOG.warning(
                     String.format(
                             "Couldn't find type name for %s `%s`",
-                            type.getClass().getName(), ParseFile.describeTree(type)));
+                            type.getClass().getName(), Parser.describeTree(type)));
         }
         return find.found;
     }

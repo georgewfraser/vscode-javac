@@ -263,7 +263,7 @@ class JavaLanguageServer extends LanguageServer {
         var column = position.position.character + 1;
         LOG.info(String.format("Complete at %s(%d,%d)", uri.getPath(), line, column));
         // Figure out what kind of completion we want to do
-        var maybeCtx = ParseFile.parseFile(uri).completionContext(line, column);
+        var maybeCtx = Parser.parseFile(uri).completionContext(line, column);
         // TODO don't complete inside of comments
         if (!maybeCtx.isPresent()) {
             var items = new ArrayList<CompletionItem>();
@@ -376,7 +376,7 @@ class JavaLanguageServer extends LanguageServer {
         var file = compiler().docs().find(ptr);
         if (!file.isPresent()) return Optional.empty();
         // Parse file and find el
-        var parse = ParseFile.parseJavaFileObject(file.get());
+        var parse = Parser.parseJavaFileObject(file.get());
         var path = parse.fuzzyFind(ptr);
         if (!path.isPresent()) return Optional.empty();
         // Parse the doctree associated with el
@@ -395,7 +395,7 @@ class JavaLanguageServer extends LanguageServer {
         var file = compiler().docs().find(ptr);
         if (!file.isPresent()) return Optional.empty();
         // Parse file and find method
-        var parse = ParseFile.parseJavaFileObject(file.get());
+        var parse = Parser.parseJavaFileObject(file.get());
         var path = parse.fuzzyFind(ptr);
         if (!path.isPresent()) return Optional.empty();
         // Should be a MethodTree
@@ -535,7 +535,7 @@ class JavaLanguageServer extends LanguageServer {
         var ptr = new Ptr(e);
         var file = compiler().docs().find(ptr);
         if (!file.isPresent()) return Optional.empty();
-        var parse = ParseFile.parseJavaFileObject(file.get());
+        var parse = Parser.parseJavaFileObject(file.get());
         var path = parse.fuzzyFind(ptr);
         if (!path.isPresent()) return Optional.empty();
         var doc = parse.doc(path.get());
@@ -616,7 +616,7 @@ class JavaLanguageServer extends LanguageServer {
         // Find the file ptr point to, and parse it
         var file = compiler().docs().find(ptr);
         if (!file.isPresent()) return Optional.empty();
-        var parse = ParseFile.parseJavaFileObject(file.get());
+        var parse = Parser.parseJavaFileObject(file.get());
         // Find the tree
         var path = parse.fuzzyFind(ptr);
         if (!path.isPresent()) return Optional.empty();
@@ -763,20 +763,20 @@ class JavaLanguageServer extends LanguageServer {
         if (name.equals("<init>")) name = el.getEnclosingElement().getSimpleName().toString();
         var sources = new ArrayList<JavaFileObject>();
         for (var f : files) {
-            var pruned = ParseFile.parseFile(f).prune(name);
+            var pruned = Parser.parseFile(f).prune(name);
             sources.add(new SourceFileObject(f, pruned, Instant.now()));
         }
         return sources;
     }
 
-    private ParseFile cacheParse;
+    private Parser cacheParse;
     private URI cacheParseFile = URI.create("file:///NONE");;
     private int cacheParseVersion = -1;
 
     private void updateCachedParse(URI file) {
         if (file.equals(cacheParseFile) && FileStore.version(file) == cacheParseVersion) return;
         LOG.info(String.format("Updating cached parse file to %s", file));
-        cacheParse = ParseFile.parseFile(file);
+        cacheParse = Parser.parseFile(file);
         cacheParseFile = file;
         cacheParseVersion = FileStore.version(file);
     }
