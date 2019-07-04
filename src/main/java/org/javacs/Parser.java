@@ -756,107 +756,6 @@ class Parser {
         return result;
     }
 
-    boolean mightReference(Element to) {
-        var findName = simpleName(to);
-        var isField = to instanceof VariableElement && to.getEnclosingElement() instanceof TypeElement;
-        var isType = to instanceof TypeElement;
-        class Found extends RuntimeException {}
-        if (isField || isType) {
-            class FindId extends TreePathScanner<Void, Void> {
-                boolean method() {
-                    var leaf = getCurrentPath().getLeaf();
-                    var parent = getCurrentPath().getParentPath().getLeaf();
-                    if (parent instanceof MethodInvocationTree) {
-                        var method = (MethodInvocationTree) parent;
-                        return method.getMethodSelect() == leaf;
-                    }
-                    return false;
-                }
-
-                @Override
-                public Void visitIdentifier(IdentifierTree t, Void __) {
-                    // TODO try to disprove that this is a reference by looking at obvious special cases, like is the
-                    // simple name of the type different?
-                    if (t.getName().contentEquals(findName) && !method()) {
-                        throw new Found();
-                    }
-                    return super.visitIdentifier(t, null);
-                }
-
-                @Override
-                public Void visitMemberSelect(MemberSelectTree t, Void __) {
-                    if (t.getIdentifier().contentEquals(findName) && !method()) {
-                        throw new Found();
-                    }
-                    return super.visitMemberSelect(t, null);
-                }
-            }
-            try {
-                new FindId().scan(root, null);
-            } catch (Found __) {
-                return true;
-            }
-            return false;
-        } else if (to instanceof ExecutableElement) {
-            class FindMethod extends TreePathScanner<Void, Void> {
-                boolean found = false;
-
-                boolean isName(Tree t) {
-                    if (t instanceof MemberSelectTree) {
-                        var select = (MemberSelectTree) t;
-                        return select.getIdentifier().contentEquals(findName);
-                    }
-                    if (t instanceof IdentifierTree) {
-                        var id = (IdentifierTree) t;
-                        return id.getName().contentEquals(findName);
-                    }
-                    if (t instanceof ParameterizedTypeTree) {
-                        var param = (ParameterizedTypeTree) t;
-                        return isName(param.getType());
-                    }
-                    return false;
-                }
-
-                @Override
-                public Void visitMethodInvocation(MethodInvocationTree t, Void __) {
-                    // TODO try to disprove that this is a reference by looking at obvious special cases, like is the
-                    // simple name of the type different?
-                    var method = t.getMethodSelect();
-                    if (isName(method)) {
-                        throw new Found();
-                    }
-                    // Check other parts
-                    return super.visitMethodInvocation(t, null);
-                }
-
-                @Override
-                public Void visitMemberReference(MemberReferenceTree t, Void __) {
-                    if (t.getName().contentEquals(findName)) {
-                        throw new Found();
-                    }
-                    return super.visitMemberReference(t, null);
-                }
-
-                @Override
-                public Void visitNewClass(NewClassTree t, Void __) {
-                    var cls = t.getIdentifier();
-                    if (isName(cls)) {
-                        throw new Found();
-                    }
-                    return super.visitNewClass(t, null);
-                }
-            }
-            try {
-                new FindMethod().scan(root, null);
-            } catch (Found __) {
-                return true;
-            }
-            return false;
-        } else {
-            return false;
-        }
-    }
-
     boolean mightContainDefinition(Element to) {
         var findName = simpleName(to);
         class Found extends RuntimeException {}
@@ -874,8 +773,6 @@ class Parser {
 
             @Override
             public Void visitMethod(MethodTree t, Void __) {
-                // TODO try to disprove that this is a reference by looking at obvious special cases, like is the
-                // simple name of the type different?
                 var match =
                         t.getName().contentEquals(findName)
                                 || t.getName().contentEquals("<init>") && className.contentEquals(findName);
@@ -1115,12 +1012,10 @@ class Parser {
             if (to instanceof TypeElement) {
                 hasWord = containsImport(hasWord, (TypeElement) to);
             }
-            LOG.info(String.format("...parse %d files", hasWord.size()));
+            // Convert Path to URI
             var matches = new HashSet<URI>();
             for (var file : hasWord) {
-                if (parseFile(file.toUri()).mightReference(to)) {
-                    matches.add(file.toUri());
-                }
+                matches.add(file.toUri());
             }
             return matches;
         } else {
