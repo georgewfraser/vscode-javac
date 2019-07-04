@@ -285,4 +285,39 @@ public class JavaCompilerServiceTest {
         assertTrue(StringSearch.matchesPartialName("foobar", "foo"));
         assertFalse(StringSearch.matchesPartialName("foo", "foobar"));
     }
+
+    @Test
+    public void pruneMethods() {
+        var actual = compiler.parseFile(resourceUri("PruneMethods.java")).prune(6, 19);
+        var expected = contents("PruneMethods_erased.java");
+        assertThat(actual, equalToIgnoringWhiteSpace(expected));
+    }
+
+    @Test
+    public void pruneToEndOfBlock() {
+        var actual = compiler.parseFile(resourceUri("PruneToEndOfBlock.java")).prune(4, 18);
+        var expected = contents("PruneToEndOfBlock_erased.java");
+        assertThat(actual, equalToIgnoringWhiteSpace(expected));
+    }
+
+    @Test
+    public void pruneMiddle() {
+        var actual = compiler.parseFile(resourceUri("PruneMiddle.java")).prune(4, 12);
+        var expected = contents("PruneMiddle_erased.java");
+        assertThat(actual, equalToIgnoringWhiteSpace(expected));
+    }
+
+    @Test
+    public void pruneDot() {
+        var actual = compiler.parseFile(resourceUri("PruneDot.java")).prune(3, 11);
+        var expected = contents("PruneDot_erased.java");
+        assertThat(actual, equalToIgnoringWhiteSpace(expected));
+    }
+
+    @Test
+    public void pruneWords() {
+        var actual = compiler.parseFile(resourceUri("PruneWords.java")).prune("word");
+        var expected = contents("PruneWords_erased.java");
+        assertThat(actual, equalToIgnoringWhiteSpace(expected));
+    }
 }

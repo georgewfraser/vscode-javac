@@ -20,10 +20,10 @@ public class BenchmarkPruner {
         public SourceFileObject pruned = file(true);
         public JavaCompilerService compiler = createCompiler();
 
-        private static SourceFileObject file(boolean prune) {
+        private SourceFileObject file(boolean prune) {
             var file = Paths.get("src/main/java/org/javacs/JavaCompilerService.java").normalize();
             if (prune) {
-                var contents = Pruner.prune(file.toUri(), "isWord");
+                var contents = compiler.parseFile(file.toUri()).prune("isWord");
                 return new SourceFileObject(file, contents, Instant.now());
             } else {
                 return new SourceFileObject(file);

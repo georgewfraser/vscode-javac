@@ -827,7 +827,7 @@ class JavaLanguageServer extends LanguageServer {
         if (name.equals("<init>")) name = el.getEnclosingElement().getSimpleName().toString();
         var sources = new ArrayList<JavaFileObject>();
         for (var f : files) {
-            var pruned = Pruner.prune(f, name);
+            var pruned = compiler().parseFile(f).prune(name);
             sources.add(new SourceFileObject(f, pruned, Instant.now()));
         }
         return sources;

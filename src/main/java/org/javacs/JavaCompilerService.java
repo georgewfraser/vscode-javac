@@ -92,7 +92,7 @@ class JavaCompilerService {
     }
 
     CompileBatch compileFocus(URI uri, int line, int character) {
-        var contents = Pruner.prune(uri, line, character);
+        var contents = parseFile(uri).prune(line, character);
         var file = new SourceFileObject(uri, contents, Instant.now());
         return compileBatch(List.of(file));
     }
