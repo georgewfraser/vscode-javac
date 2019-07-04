@@ -691,7 +691,7 @@ class JavaLanguageServer extends LanguageServer {
         }
 
         // Compile all files that *might* contain definitions of fromEl
-        var toFiles = compiler().potentialDefinitions(toEl.get());
+        var toFiles = Parser.potentialDefinitions(toEl.get());
         toFiles.add(fromUri);
         try (var batch = compiler().compileBatch(pruneWord(toFiles, toEl.get()))) {
             // Find fromEl again, so that we have an Element from the current batch
@@ -734,7 +734,7 @@ class JavaLanguageServer extends LanguageServer {
         }
 
         // Compile all files that *might* contain references to toEl
-        var fromUris = compiler().potentialReferences(toEl.get());
+        var fromUris = Parser.potentialReferences(toEl.get());
         fromUris.add(toUri);
         try (var batch = compiler().compileBatch(pruneWord(fromUris, toEl.get()))) {
             var fromTreePaths = batch.references(toUri, toLine, toColumn);
@@ -797,8 +797,8 @@ class JavaLanguageServer extends LanguageServer {
         for (var d : declarations) {
             var range = cacheParse.range(d);
             if (!range.isPresent()) continue;
-            var className = JavaCompilerService.className(d);
-            var memberName = JavaCompilerService.memberName(d);
+            var className = Parser.className(d);
+            var memberName = Parser.memberName(d);
             // If test class or method, add "Run Test" code lens
             if (cacheParse.isTestClass(d)) {
                 var arguments = new JsonArray();
@@ -880,7 +880,7 @@ class JavaLanguageServer extends LanguageServer {
         }
         LOG.info(String.format("Count references to `%s`...", toPtr));
         // Identify all files that *might* contain references to toEl
-        var fromUris = compiler().potentialReferences(toEl.get());
+        var fromUris = Parser.potentialReferences(toEl.get());
         fromUris.add(toUri);
         // If there are 0 references, stop early
         if (fromUris.isEmpty()) {
