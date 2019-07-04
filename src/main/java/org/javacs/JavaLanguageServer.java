@@ -14,7 +14,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 import javax.lang.model.element.*;
-import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import org.javacs.lsp.*;
 
@@ -35,68 +34,6 @@ class JavaLanguageServer extends LanguageServer {
         return cacheCompiler;
     }
 
-    private static int severity(Diagnostic.Kind kind) {
-        switch (kind) {
-            case ERROR:
-                return DiagnosticSeverity.Error;
-            case WARNING:
-            case MANDATORY_WARNING:
-                return DiagnosticSeverity.Warning;
-            case NOTE:
-                return DiagnosticSeverity.Information;
-            case OTHER:
-            default:
-                return DiagnosticSeverity.Hint;
-        }
-    }
-
-    private static Position position(String content, long offset) {
-        int line = 0, column = 0;
-        for (int i = 0; i < offset; i++) {
-            if (content.charAt(i) == '\n') {
-                line++;
-                column = 0;
-            } else column++;
-        }
-        return new Position(line, column);
-    }
-
-    void publishDiagnostics(Collection<URI> files, List<Diagnostic<? extends JavaFileObject>> javaDiagnostics) {
-        var byUri = new HashMap<URI, List<org.javacs.lsp.Diagnostic>>();
-        for (var j : javaDiagnostics) {
-            if (j.getSource() == null) {
-                LOG.warning("No source in warning " + j.getMessage(null));
-                continue;
-            }
-            // Check that error is in an open file
-            var uri = j.getSource().toUri();
-            if (!files.contains(uri)) {
-                continue;
-            }
-            // Find start and end position
-            var content = FileStore.contents(uri);
-            var start = position(content, j.getStartPosition());
-            var end = position(content, j.getEndPosition());
-            var d = new org.javacs.lsp.Diagnostic();
-            d.severity = severity(j.getKind());
-            d.range = new Range(start, end);
-            d.code = j.getCode();
-            d.message = j.getMessage(null);
-            if (j.getCode().equals("unused")) {
-                d.tags = List.of(DiagnosticTag.Unnecessary);
-            }
-            // Add to byUri
-            var ds = byUri.computeIfAbsent(uri, __ -> new ArrayList<>());
-            ds.add(d);
-        }
-
-        for (var f : files) {
-            var ds = byUri.getOrDefault(f, List.of());
-            var message = new PublishDiagnosticsParams(f, ds);
-            client.publishDiagnostics(message);
-        }
-    }
-
     void lint(Collection<URI> uris) {
         // TODO only lint the current focus, merging errors/decorations with existing
         LOG.info("Lint " + Profiler.describe(uris) + "...");
@@ -104,8 +41,9 @@ class JavaLanguageServer extends LanguageServer {
         if (uris.isEmpty()) return;
         try (var batch = compiler().compileUris(uris)) {
             // Report compilation errors
-            var messages = batch.reportErrors();
-            publishDiagnostics(uris, messages);
+            for (var ds : batch.reportErrors()) {
+                client.publishDiagnostics(ds);
+            }
             uncheckedChanges = false;
         }
         var elapsed = Duration.between(started, Instant.now());
@@ -1270,7 +1208,7 @@ class JavaLanguageServer extends LanguageServer {
 
         if (FileStore.isJavaFile(params.textDocument.uri)) {
             // Clear diagnostics
-            publishDiagnostics(List.of(params.textDocument.uri), List.of());
+            client.publishDiagnostics(new PublishDiagnosticsParams(params.textDocument.uri, List.of()));
         }
     }
 

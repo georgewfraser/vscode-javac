@@ -18,6 +18,10 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.*;
 import javax.tools.*;
+import org.javacs.lsp.DiagnosticSeverity;
+import org.javacs.lsp.DiagnosticTag;
+import org.javacs.lsp.Position;
+import org.javacs.lsp.PublishDiagnosticsParams;
 import org.javacs.lsp.Range;
 
 public class CompileBatch implements AutoCloseable {
@@ -105,28 +109,99 @@ public class CompileBatch implements AutoCloseable {
         return true;
     }
 
-    public List<Diagnostic<? extends JavaFileObject>> reportErrors() {
+    public Collection<PublishDiagnosticsParams> reportErrors() {
+        // Construct empty lists
+        var byUri = new HashMap<URI, PublishDiagnosticsParams>();
+        for (var r : roots) {
+            var params = new PublishDiagnosticsParams();
+            params.uri = r.getSourceFile().toUri();
+            byUri.put(params.uri, params);
+        }
+        // Convert diags
+        for (var d : parent.diags) {
+            var source = d.getSource();
+            if (source == null) continue;
+            var uri = source.toUri();
+            if (!byUri.containsKey(uri)) continue;
+            var convert = asDiagnostic(d);
+            byUri.get(uri).diagnostics.add(convert);
+        }
         // Check for unused privates
         for (var r : roots) {
+            var uri = r.getSourceFile().toUri();
             var warnUnused = new WarnUnused(borrow.task);
             warnUnused.scan(r, null);
             for (var unusedEl : warnUnused.notUsed()) {
                 if (okUnused(unusedEl.getSimpleName())) continue;
-                var path = trees.getPath(unusedEl);
-                var message = String.format("`%s` is not used", unusedEl.getSimpleName());
-                Diagnostic.Kind kind;
-                if (unusedEl instanceof ExecutableElement || unusedEl instanceof TypeElement) {
-                    kind = Diagnostic.Kind.OTHER;
-                } else {
-                    kind = Diagnostic.Kind.WARNING;
-                }
-                parent.diags.add(new Warning(borrow.task, path, kind, "unused", message));
+                var warn = warnUnused(unusedEl);
+                byUri.get(uri).diagnostics.add(warn);
             }
         }
         // TODO hint fields that could be final
         // TODO hint unused exception
 
-        return Collections.unmodifiableList(new ArrayList<>(parent.diags));
+        return byUri.values();
+    }
+
+    private static int severity(Diagnostic.Kind kind) {
+        switch (kind) {
+            case ERROR:
+                return DiagnosticSeverity.Error;
+            case WARNING:
+            case MANDATORY_WARNING:
+                return DiagnosticSeverity.Warning;
+            case NOTE:
+                return DiagnosticSeverity.Information;
+            case OTHER:
+            default:
+                return DiagnosticSeverity.Hint;
+        }
+    }
+
+    private static Position position(String content, long offset) {
+        int line = 0, column = 0;
+        for (int i = 0; i < offset; i++) {
+            if (content.charAt(i) == '\n') {
+                line++;
+                column = 0;
+            } else column++;
+        }
+        return new Position(line, column);
+    }
+
+    private org.javacs.lsp.Diagnostic warnUnused(Element unusedEl) {
+        var path = trees.getPath(unusedEl);
+        var pos = trees.getSourcePositions();
+        var start = pos.getStartPosition(path.getCompilationUnit(), path.getLeaf());
+        var end = pos.getEndPosition(path.getCompilationUnit(), path.getLeaf());
+        var uri = path.getCompilationUnit().getSourceFile().toUri();
+        var contents = FileStore.contents(uri);
+        var d = new org.javacs.lsp.Diagnostic();
+        d.range = new Range(position(contents, start), position(contents, end));
+        d.message = String.format("`%s` is not used", unusedEl.getSimpleName());
+        d.code = "unused";
+        if (unusedEl instanceof ExecutableElement || unusedEl instanceof TypeElement) {
+            d.severity = DiagnosticSeverity.Hint;
+        } else {
+            d.severity = DiagnosticSeverity.Warning;
+        }
+        d.tags = List.of(DiagnosticTag.Unnecessary);
+        return d;
+    }
+
+    private org.javacs.lsp.Diagnostic asDiagnostic(Diagnostic<? extends JavaFileObject> java) {
+        // Check that error is in an open file
+        var uri = java.getSource().toUri();
+        // Find start and end position
+        var content = FileStore.contents(uri);
+        var start = position(content, java.getStartPosition());
+        var end = position(content, java.getEndPosition());
+        var d = new org.javacs.lsp.Diagnostic();
+        d.severity = severity(java.getKind());
+        d.range = new Range(start, end);
+        d.code = java.getCode();
+        d.message = java.getMessage(null);
+        return d;
     }
 
     public Optional<List<TreePath>> definitions(Element el) {

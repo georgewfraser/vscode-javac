@@ -9,14 +9,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
-import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
+import org.javacs.lsp.PublishDiagnosticsParams;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -219,14 +219,16 @@ public class JavaCompilerServiceTest {
         assertThat(diags, not(empty()));
     }
 
-    private static List<String> errorStrings(List<Diagnostic<? extends JavaFileObject>> diags) {
+    private static List<String> errorStrings(Collection<PublishDiagnosticsParams> list) {
         var strings = new ArrayList<String>();
-        for (var d : diags) {
-            var file = StringSearch.fileName(d.getSource().toUri());
-            var line = d.getLineNumber();
-            var msg = d.getMessage(null);
-            var string = String.format("%s(%d): %s", file, line, msg);
-            strings.add(string);
+        for (var group : list) {
+            for (var d : group.diagnostics) {
+                var file = StringSearch.fileName(group.uri);
+                var line = d.range.start.line;
+                var msg = d.message;
+                var string = String.format("%s(%d): %s", file, line, msg);
+                strings.add(string);
+            }
         }
         return strings;
     }
