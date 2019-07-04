@@ -114,26 +114,6 @@ class InferConfig {
         }
     }
 
-    /**
-     * Search bazel-bin for per-module output directories matching the pattern:
-     *
-     * <p>bazel-bin/path/to/module/_javac/rule/lib*_classes
-     */
-    private Set<Path> bazelOutputDirectories(Path bazelBin) {
-        try {
-            var bazelBinTarget = Files.readSymbolicLink(bazelBin);
-            LOG.info("Searching for bazel output directories in " + bazelBinTarget);
-
-            var dirs = new HashSet<Path>();
-            findBazelJavac(bazelBinTarget.toFile(), workspaceRoot.toFile(), dirs);
-            LOG.info(String.format("Found %d bazel output directories", dirs.size()));
-
-            return dirs;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /** Search bazel-genfiles for jars */
     private Set<Path> bazelJars(Path bazelGenFiles) {
         try {
