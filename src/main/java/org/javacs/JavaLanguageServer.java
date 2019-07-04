@@ -3,8 +3,6 @@ package org.javacs;
 import com.google.gson.*;
 import com.sun.source.doctree.*;
 import com.sun.source.tree.*;
-import com.sun.source.util.TreePath;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1105,75 +1103,7 @@ class JavaLanguageServer extends LanguageServer {
     @Override
     public List<FoldingRange> foldingRange(FoldingRangeParams params) {
         updateCachedParse(params.textDocument.uri);
-        var folds = cacheParse.foldingRanges();
-        var all = new ArrayList<FoldingRange>();
-
-        // Merge import ranges
-        if (!folds.imports.isEmpty()) {
-            var merged = asFoldingRange(folds.imports.get(0), FoldingRangeKind.Imports);
-            for (var i : folds.imports) {
-                var r = asFoldingRange(i, FoldingRangeKind.Imports);
-                if (r.startLine <= merged.endLine + 1) {
-                    merged =
-                            new FoldingRange(
-                                    merged.startLine,
-                                    merged.startCharacter,
-                                    r.endLine,
-                                    r.endCharacter,
-                                    FoldingRangeKind.Imports);
-                } else {
-                    all.add(merged);
-                    merged = r;
-                }
-            }
-            all.add(merged);
-        }
-
-        // Convert blocks and comments
-        for (var t : folds.blocks) {
-            all.add(asFoldingRange(t, FoldingRangeKind.Region));
-        }
-        for (var t : folds.comments) {
-            all.add(asFoldingRange(t, FoldingRangeKind.Region));
-        }
-
-        return all;
-    }
-
-    private FoldingRange asFoldingRange(TreePath t, String kind) {
-        var pos = cacheParse.sourcePositions();
-        var lines = t.getCompilationUnit().getLineMap();
-        var start = (int) pos.getStartPosition(t.getCompilationUnit(), t.getLeaf());
-        var end = (int) pos.getEndPosition(t.getCompilationUnit(), t.getLeaf());
-
-        // If this is a class tree, adjust start position to '{'
-        if (t.getLeaf() instanceof ClassTree) {
-            CharSequence content;
-            try {
-                content = t.getCompilationUnit().getSourceFile().getCharContent(true);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            for (var i = start; i < content.length(); i++) {
-                if (content.charAt(i) == '{') {
-                    start = i;
-                    break;
-                }
-            }
-        }
-
-        // Convert offset to 0-based line and character
-        var startLine = (int) lines.getLineNumber(start) - 1; // TODO (int) is not coloring
-        var startChar = (int) lines.getColumnNumber(start) - 1;
-        var endLine = (int) lines.getLineNumber(end) - 1;
-        var endChar = (int) lines.getColumnNumber(end) - 1;
-
-        // If this is a block, move end position back one line so we don't fold the '}'
-        if (t.getLeaf() instanceof ClassTree || t.getLeaf() instanceof BlockTree) {
-            endLine--;
-        }
-
-        return new FoldingRange(startLine, startChar, endLine, endChar, kind);
+        return cacheParse.foldingRanges();
     }
 
     @Override

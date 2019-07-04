@@ -36,7 +36,6 @@ class ParseFile {
 
     private final String contents;
     private final JavacTask task;
-    private final Trees trees;
     private final CompilationUnitTree root;
 
     ParseFile(JavaCompilerService parent, URI file) {
@@ -53,7 +52,6 @@ class ParseFile {
             throw new RuntimeException(e);
         }
         this.task = singleFileTask(parent, file);
-        this.trees = Trees.instance(task);
         var profiler = new Profiler();
         task.addTaskListener(profiler);
         try {
@@ -62,20 +60,6 @@ class ParseFile {
             throw new RuntimeException(e);
         }
         profiler.print();
-    }
-
-    ParseFile(JavacTask task, CompilationUnitTree root) {
-        Objects.requireNonNull(task);
-        Objects.requireNonNull(root);
-
-        try {
-            this.contents = root.getSourceFile().getCharContent(true).toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        this.task = task;
-        this.trees = Trees.instance(task);
-        this.root = root;
     }
 
     boolean isTestMethod(TreePath path) {
@@ -187,6 +171,7 @@ class ParseFile {
                         "Finding completion position near %s(%d,%d)...",
                         root.getSourceFile().toUri().getPath(), line, character));
 
+        var trees = Trees.instance(task);
         var pos = trees.getSourcePositions();
         var lines = root.getLineMap();
         var cursor = lines.getPosition(line, character);
@@ -339,7 +324,7 @@ class ParseFile {
         return Optional.of(find.result);
     }
 
-    FoldingRanges foldingRanges() {
+    List<FoldingRange> foldingRanges() {
         var imports = new ArrayList<TreePath>();
         var blocks = new ArrayList<TreePath>();
         // TODO find comment trees
@@ -365,11 +350,75 @@ class ParseFile {
         }
         new FindFoldingRanges().scan(root, null);
 
-        return new FoldingRanges(imports, blocks, comments);
+        var all = new ArrayList<FoldingRange>();
+
+        // Merge import ranges
+        if (!imports.isEmpty()) {
+            var merged = asFoldingRange(imports.get(0), FoldingRangeKind.Imports);
+            for (var i : imports) {
+                var r = asFoldingRange(i, FoldingRangeKind.Imports);
+                if (r.startLine <= merged.endLine + 1) {
+                    merged =
+                            new FoldingRange(
+                                    merged.startLine,
+                                    merged.startCharacter,
+                                    r.endLine,
+                                    r.endCharacter,
+                                    FoldingRangeKind.Imports);
+                } else {
+                    all.add(merged);
+                    merged = r;
+                }
+            }
+            all.add(merged);
+        }
+
+        // Convert blocks and comments
+        for (var t : blocks) {
+            all.add(asFoldingRange(t, FoldingRangeKind.Region));
+        }
+        for (var t : comments) {
+            all.add(asFoldingRange(t, FoldingRangeKind.Region));
+        }
+
+        return all;
     }
 
-    SourcePositions sourcePositions() {
-        return trees.getSourcePositions();
+    private FoldingRange asFoldingRange(TreePath t, String kind) {
+        var trees = Trees.instance(task);
+        var pos = trees.getSourcePositions();
+        var lines = t.getCompilationUnit().getLineMap();
+        var start = (int) pos.getStartPosition(t.getCompilationUnit(), t.getLeaf());
+        var end = (int) pos.getEndPosition(t.getCompilationUnit(), t.getLeaf());
+
+        // If this is a class tree, adjust start position to '{'
+        if (t.getLeaf() instanceof ClassTree) {
+            CharSequence content;
+            try {
+                content = t.getCompilationUnit().getSourceFile().getCharContent(true);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            for (var i = start; i < content.length(); i++) {
+                if (content.charAt(i) == '{') {
+                    start = i;
+                    break;
+                }
+            }
+        }
+
+        // Convert offset to 0-based line and character
+        var startLine = (int) lines.getLineNumber(start) - 1; // TODO (int) is not coloring
+        var startChar = (int) lines.getColumnNumber(start) - 1;
+        var endLine = (int) lines.getLineNumber(end) - 1;
+        var endChar = (int) lines.getColumnNumber(end) - 1;
+
+        // If this is a block, move end position back one line so we don't fold the '}'
+        if (t.getLeaf() instanceof ClassTree || t.getLeaf() instanceof BlockTree) {
+            endLine--;
+        }
+
+        return new FoldingRange(startLine, startChar, endLine, endChar, kind);
     }
 
     /** Find and source code associated with a ptr */
@@ -635,11 +684,10 @@ class ParseFile {
 
     private static DocCommentTree makeEmptyDoc() {
         var file = new SourceFileObject(URI.create("file:///Foo.java"), "/** */ class Foo { }", Instant.now());
-        var compiler = ServiceLoader.load(JavaCompiler.class).iterator().next();
-        var fileManager = compiler.getStandardFileManager(ParseFile::ignoreError, null, Charset.defaultCharset());
+        var fileManager = COMPILER.getStandardFileManager(ParseFile::ignoreError, null, Charset.defaultCharset());
         var task =
                 (JavacTask)
-                        compiler.getTask(
+                        COMPILER.getTask(
                                 null,
                                 fileManager,
                                 ParseFile::ignoreError,
@@ -1016,16 +1064,6 @@ class ParseFile {
     }
 
     private static final Logger LOG = Logger.getLogger("main");
-}
-
-class FoldingRanges {
-    final List<TreePath> imports, blocks, comments;
-
-    FoldingRanges(List<TreePath> imports, List<TreePath> blocks, List<TreePath> comments) {
-        this.imports = imports;
-        this.blocks = blocks;
-        this.comments = comments;
-    }
 }
 
 class CompletionContext {
