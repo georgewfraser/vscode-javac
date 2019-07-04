@@ -22,29 +22,14 @@ class SourceFileManager extends ForwardingJavaFileManager<StandardJavaFileManage
         LOG.warning(error.getMessage(null));
     }
 
-    // TODO if .class files get moved around, this could become wrong
-    // class path includes generated .class files, so this can definitely happen
-    private final LruCache<String, Iterable<JavaFileObject>> cacheClassPath = new LruCache<>(1000, this::listClassPath);
-
     @Override
     public Iterable<JavaFileObject> list(
             Location location, String packageName, Set<JavaFileObject.Kind> kinds, boolean recurse) throws IOException {
         if (location == StandardLocation.SOURCE_PATH) {
             var stream = FileStore.list(packageName).stream().map(this::asJavaFileObject);
             return stream::iterator;
-        } else if (location == StandardLocation.CLASS_PATH) {
-            // Listing large class paths is expensive
-            return cacheClassPath.get(packageName);
         } else {
             return super.list(location, packageName, kinds, recurse);
-        }
-    }
-
-    private Iterable<JavaFileObject> listClassPath(String packageName) {
-        try {
-            return super.list(StandardLocation.CLASS_PATH, packageName, Set.of(JavaFileObject.Kind.values()), false);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
