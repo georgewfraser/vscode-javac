@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"$schema": "https://raw.githubusercontent.com/ealap/tmlanguage/master/tmlanguage.json",
 	"name": "Java",
 	"scopeName": "source.java",
 	"patterns": [
@@ -78,7 +78,7 @@
 					"name": "keyword.class"
 				},
 				{
-					"match": "\\b(try|finally|throw|return|break|continue|do|for|while|switch|case|if|else|goto|synchronized)\\b",
+					"match": "\\b(try|catch|finally|throw|return|break|continue|do|for|while|switch|case|if|else|goto|synchronized)\\b",
 					"name": "keyword.control"
 				},
 				{
