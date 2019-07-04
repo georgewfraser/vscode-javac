@@ -70,7 +70,7 @@ public class CompileBatch implements AutoCloseable {
                 parent.fileManager,
                 parent.diags::add,
                 JavaCompilerService.options(parent.classPath, parent.addExports),
-                Collections.emptyList(),
+                List.of(),
                 sources);
     }
 
@@ -620,7 +620,7 @@ public class CompileBatch implements AutoCloseable {
         var type = trees.getTypeMirror(path);
         if (type == null) {
             LOG.info("...no type at " + leaf.getExpression());
-            return Collections.emptyList();
+            return List.of();
         }
         LOG.info(String.format("...switched expression has type `%s`", type));
         var types = borrow.task.getTypes();
@@ -717,7 +717,7 @@ public class CompileBatch implements AutoCloseable {
             }
             if (!hasMembers(type)) {
                 LOG.warning("...don't know how to complete members of type " + type);
-                return Collections.emptyList();
+                return List.of();
             }
 
             var result = new ArrayList<Completion>();

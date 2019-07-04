@@ -13,37 +13,29 @@ import java.util.regex.Pattern;
 import javax.lang.model.element.*;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
 import org.javacs.lsp.*;
 
 class ParseFile {
     private static final JavaCompiler COMPILER = ServiceLoader.load(JavaCompiler.class).iterator().next();
+    private static final StandardJavaFileManager FILE_MANAGER =
+            COMPILER.getStandardFileManager(ParseFile::ignoreError, null, null);
 
     /** Create a task that compiles a single file */
-    private static JavacTask singleFileTask(JavaCompilerService parent, JavaFileObject file) {
-        // TODO could eliminate the connection to parent
-        parent.diags.clear();
-        // TODO the fixed cost of creating a task is greater than the cost of parsing 1 file; use reusable compiler and
-        // verify cost is lower
+    private static JavacTask singleFileTask(JavaFileObject file) {
         return (JavacTask)
-                COMPILER.getTask(
-                        null,
-                        parent.fileManager,
-                        parent.diags::add,
-                        JavaCompilerService.options(parent.classPath, parent.addExports),
-                        Collections.emptyList(),
-                        List.of(file));
+                COMPILER.getTask(null, FILE_MANAGER, ParseFile::ignoreError, List.of(), List.of(), List.of(file));
     }
 
     private final String contents;
     private final JavacTask task;
     private final CompilationUnitTree root;
 
-    ParseFile(JavaCompilerService parent, URI file) {
-        this(parent, new SourceFileObject(file));
+    ParseFile(URI file) {
+        this(new SourceFileObject(file));
     }
 
-    ParseFile(JavaCompilerService parent, JavaFileObject file) {
-        Objects.requireNonNull(parent);
+    ParseFile(JavaFileObject file) {
         Objects.requireNonNull(file);
 
         try {
@@ -51,15 +43,12 @@ class ParseFile {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        this.task = singleFileTask(parent, file);
-        var profiler = new Profiler();
-        task.addTaskListener(profiler);
+        this.task = singleFileTask(file);
         try {
             this.root = task.parse().iterator().next();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        profiler.print();
     }
 
     boolean isTestMethod(TreePath path) {
@@ -691,7 +680,7 @@ class ParseFile {
                                 null,
                                 fileManager,
                                 ParseFile::ignoreError,
-                                Collections.emptyList(),
+                                List.of(),
                                 null,
                                 Collections.singletonList(file));
         var docs = DocTrees.instance(task);

@@ -84,11 +84,11 @@ class JavaCompilerService {
     }
 
     ParseFile parseFile(URI file) {
-        return new ParseFile(this, file);
+        return new ParseFile(file);
     }
 
     ParseFile parseJavaFileObject(JavaFileObject file) {
-        return new ParseFile(this, file);
+        return new ParseFile(file);
     }
 
     CompileBatch compileFocus(URI uri, int line, int character) {
