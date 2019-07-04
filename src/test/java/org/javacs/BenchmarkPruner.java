@@ -23,7 +23,7 @@ public class BenchmarkPruner {
         private SourceFileObject file(boolean prune) {
             var file = Paths.get("src/main/java/org/javacs/JavaCompilerService.java").normalize();
             if (prune) {
-                var contents = compiler.parseFile(file.toUri()).prune("isWord");
+                var contents = ParseFile.parseFile(file.toUri()).prune("isWord");
                 return new SourceFileObject(file, contents, Instant.now());
             } else {
                 return new SourceFileObject(file);

@@ -1151,7 +1151,7 @@ public class CompileBatch implements AutoCloseable {
 
     private List<Completion> accessibleClasses(
             URI fromUri, Path toFile, String partialName, String fromPackage, Set<String> skip) {
-        var parse = parent.parseFile(toFile.toUri());
+        var parse = ParseFile.parseFile(toFile.toUri());
         var classNames = parse.accessibleClasses(partialName, fromPackage);
         var result = new ArrayList<Completion>();
         for (var name : classNames) {

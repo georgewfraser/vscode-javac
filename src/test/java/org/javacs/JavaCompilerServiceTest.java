@@ -127,7 +127,7 @@ public class JavaCompilerServiceTest {
     @Test
     public void completeIdentifiers() {
         var uri = resourceUri("CompleteIdentifiers.java");
-        var ctx = compiler.parseFile(uri).completionContext(13, 21).get();
+        var ctx = ParseFile.parseFile(uri).completionContext(13, 21).get();
         var focus = compiler.compileFocus(uri, ctx.line, ctx.character);
         var found = focus.completeIdentifiers(uri, ctx.line, ctx.character, ctx.inClass, ctx.inMethod, ctx.partialName);
         var names = completionNames(found);
@@ -156,7 +156,7 @@ public class JavaCompilerServiceTest {
     @Test
     public void completeMembers() {
         var uri = resourceUri("CompleteMembers.java");
-        var ctx = compiler.parseFile(uri).completionContext(3, 15).get();
+        var ctx = ParseFile.parseFile(uri).completionContext(3, 15).get();
         var focus = compiler.compileFocus(uri, ctx.line, ctx.character);
         var found = focus.completeMembers(uri, ctx.line, ctx.character, false);
         var names = completionNames(found);
@@ -168,7 +168,7 @@ public class JavaCompilerServiceTest {
     @Test
     public void completeExpression() {
         var uri = resourceUri("CompleteExpression.java");
-        var ctx = compiler.parseFile(uri).completionContext(3, 37).get();
+        var ctx = ParseFile.parseFile(uri).completionContext(3, 37).get();
         var focus = compiler.compileFocus(uri, ctx.line, ctx.character);
         var found = focus.completeMembers(uri, ctx.line, ctx.character, false);
         var names = completionNames(found);
@@ -180,7 +180,7 @@ public class JavaCompilerServiceTest {
     @Test
     public void completeClass() {
         var uri = resourceUri("CompleteClass.java");
-        var ctx = compiler.parseFile(uri).completionContext(3, 23).get();
+        var ctx = ParseFile.parseFile(uri).completionContext(3, 23).get();
         var focus = compiler.compileFocus(uri, ctx.line, ctx.character);
         var found = focus.completeMembers(uri, ctx.line, ctx.character, false);
         var names = completionNames(found);
@@ -193,7 +193,7 @@ public class JavaCompilerServiceTest {
     @Test
     public void completeImports() {
         var uri = resourceUri("CompleteImports.java");
-        var ctx = compiler.parseFile(uri).completionContext(1, 18).get();
+        var ctx = ParseFile.parseFile(uri).completionContext(1, 18).get();
         var focus = compiler.compileFocus(uri, ctx.line, ctx.character);
         var found = focus.completeMembers(uri, ctx.line, ctx.character, false);
         var names = completionNames(found);
@@ -262,7 +262,7 @@ public class JavaCompilerServiceTest {
         var method = invocation.activeMethod.get();
         var ptr = new Ptr(method);
         var file = compiler.docs().find(ptr).get();
-        var parse = compiler.parseJavaFileObject(file);
+        var parse = ParseFile.parseJavaFileObject(file);
         var path = parse.fuzzyFind(ptr).get();
         var doc = parse.doc(path);
         assertThat(doc.toString(), containsString("A great method"));
@@ -290,35 +290,35 @@ public class JavaCompilerServiceTest {
 
     @Test
     public void pruneMethods() {
-        var actual = compiler.parseFile(resourceUri("PruneMethods.java")).prune(6, 19);
+        var actual = ParseFile.parseFile(resourceUri("PruneMethods.java")).prune(6, 19);
         var expected = contents("PruneMethods_erased.java");
         assertThat(actual, equalToIgnoringWhiteSpace(expected));
     }
 
     @Test
     public void pruneToEndOfBlock() {
-        var actual = compiler.parseFile(resourceUri("PruneToEndOfBlock.java")).prune(4, 18);
+        var actual = ParseFile.parseFile(resourceUri("PruneToEndOfBlock.java")).prune(4, 18);
         var expected = contents("PruneToEndOfBlock_erased.java");
         assertThat(actual, equalToIgnoringWhiteSpace(expected));
     }
 
     @Test
     public void pruneMiddle() {
-        var actual = compiler.parseFile(resourceUri("PruneMiddle.java")).prune(4, 12);
+        var actual = ParseFile.parseFile(resourceUri("PruneMiddle.java")).prune(4, 12);
         var expected = contents("PruneMiddle_erased.java");
         assertThat(actual, equalToIgnoringWhiteSpace(expected));
     }
 
     @Test
     public void pruneDot() {
-        var actual = compiler.parseFile(resourceUri("PruneDot.java")).prune(3, 11);
+        var actual = ParseFile.parseFile(resourceUri("PruneDot.java")).prune(3, 11);
         var expected = contents("PruneDot_erased.java");
         assertThat(actual, equalToIgnoringWhiteSpace(expected));
     }
 
     @Test
     public void pruneWords() {
-        var actual = compiler.parseFile(resourceUri("PruneWords.java")).prune("word");
+        var actual = ParseFile.parseFile(resourceUri("PruneWords.java")).prune("word");
         var expected = contents("PruneWords_erased.java");
         assertThat(actual, equalToIgnoringWhiteSpace(expected));
     }

@@ -31,11 +31,11 @@ class ParseFile {
     private final JavacTask task;
     private final CompilationUnitTree root;
 
-    ParseFile(URI file) {
+    private ParseFile(URI file) {
         this(new SourceFileObject(file));
     }
 
-    ParseFile(JavaFileObject file) {
+    private ParseFile(JavaFileObject file) {
         Objects.requireNonNull(file);
 
         try {
@@ -49,6 +49,14 @@ class ParseFile {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static ParseFile parseFile(URI file) {
+        return new ParseFile(file);
+    }
+
+    static ParseFile parseJavaFileObject(JavaFileObject file) {
+        return new ParseFile(file);
     }
 
     boolean isTestMethod(TreePath path) {

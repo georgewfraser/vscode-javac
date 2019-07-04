@@ -83,16 +83,8 @@ class JavaCompilerService {
         return docs;
     }
 
-    ParseFile parseFile(URI file) {
-        return new ParseFile(file);
-    }
-
-    ParseFile parseJavaFileObject(JavaFileObject file) {
-        return new ParseFile(file);
-    }
-
     CompileBatch compileFocus(URI uri, int line, int character) {
-        var contents = parseFile(uri).prune(line, character);
+        var contents = ParseFile.parseFile(uri).prune(line, character);
         var file = new SourceFileObject(uri, contents, Instant.now());
         return compileBatch(List.of(file));
     }
@@ -135,7 +127,7 @@ class JavaCompilerService {
             // so it's an effective optimization
             var matches = new HashSet<URI>();
             for (var file : hasWord) {
-                if (parseFile(file.toUri()).mightContainDefinition(to)) {
+                if (ParseFile.parseFile(file.toUri()).mightContainDefinition(to)) {
                     matches.add(file.toUri());
                 }
             }
@@ -176,7 +168,7 @@ class JavaCompilerService {
             }
             var matches = new HashSet<URI>();
             for (var file : hasWord) {
-                if (parseFile(file.toUri()).mightReference(to)) {
+                if (ParseFile.parseFile(file.toUri()).mightReference(to)) {
                     matches.add(file.toUri());
                 }
             }
@@ -385,7 +377,7 @@ class JavaCompilerService {
             if (!StringSearch.containsWordMatching(file, query)) continue;
             // Parse the file and check class members for matches
             LOG.info(String.format("...%s contains text matches", file.getFileName()));
-            var parse = parseFile(file.toUri());
+            var parse = ParseFile.parseFile(file.toUri());
             var symbols = parse.findSymbolsMatching(query);
             parsed++;
             // If we confirm matches, add them to the results

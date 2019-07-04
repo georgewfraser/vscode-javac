@@ -208,7 +208,6 @@ class StringSearch {
         }
     }
 
-    // TODO move all this to StringSearch
     private static final ByteBuffer SEARCH_BUFFER = ByteBuffer.allocateDirect(1 * 1024 * 1024);
 
     // TODO cache the progress made by searching shorter queries
@@ -251,7 +250,7 @@ class StringSearch {
     }
 
     /**
-     * Check if `candidate` contains all the characters of `find`, in-order, case-insensitive Matches can be
+     * Check if `candidate` contains all the characters of `find`, in-order, case-insensitive. Matches can be
      * discontinuous if the letters of `find` match the first letters of words in `candidate` For example, fb matches
      * FooBar, but it doesn't match Foobar (exposed for testing)
      */
