@@ -5,6 +5,7 @@ import com.sun.source.tree.*;
 import com.sun.source.util.*;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
@@ -633,7 +634,17 @@ class ParseFile {
 
     private static DocCommentTree makeEmptyDoc() {
         var file = new SourceFileObject(URI.create("file:///Foo.java"), "/** */ class Foo { }", Instant.now());
-        var task = Parser.parseTask(file);
+        var compiler = ServiceLoader.load(JavaCompiler.class).iterator().next();
+        var fileManager = compiler.getStandardFileManager(ParseFile::ignoreError, null, Charset.defaultCharset());
+        var task =
+                (JavacTask)
+                        compiler.getTask(
+                                null,
+                                fileManager,
+                                ParseFile::ignoreError,
+                                Collections.emptyList(),
+                                null,
+                                Collections.singletonList(file));
         var docs = DocTrees.instance(task);
         CompilationUnitTree root;
         try {
@@ -653,6 +664,11 @@ class ParseFile {
         var find = new FindEmptyDoc();
         find.scan(root, null);
         return Objects.requireNonNull(find.found);
+    }
+
+    private static void ignoreError(javax.tools.Diagnostic<? extends JavaFileObject> err) {
+        // Too noisy, this only comes up in parse tasks which tend to be less important
+        // LOG.warning(err.getMessage(Locale.getDefault()));
     }
 
     static String describeTree(Tree leaf) {
