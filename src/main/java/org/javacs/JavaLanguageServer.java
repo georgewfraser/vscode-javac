@@ -251,6 +251,7 @@ class JavaLanguageServer extends LanguageServer {
         return false;
     }
 
+    // TODO completion shows error when you open VSCode and only this file is open
     /** Cache of completions from the last call to `completion` */
     private final Map<String, Completion> lastCompletions = new HashMap<>();
 
@@ -693,7 +694,8 @@ class JavaLanguageServer extends LanguageServer {
         // Compile all files that *might* contain definitions of fromEl
         var toFiles = Parser.potentialDefinitions(toEl.get());
         toFiles.add(fromUri);
-        try (var batch = compiler().compileBatch(pruneWord(toFiles, toEl.get()))) {
+        var eraseCode = pruneWord(toFiles, toEl.get());
+        try (var batch = compiler().compileBatch(eraseCode)) {
             // Find fromEl again, so that we have an Element from the current batch
             var fromElAgain = batch.element(fromUri, fromLine, fromColumn).get();
 
@@ -736,7 +738,8 @@ class JavaLanguageServer extends LanguageServer {
         // Compile all files that *might* contain references to toEl
         var fromUris = Parser.potentialReferences(toEl.get());
         fromUris.add(toUri);
-        try (var batch = compiler().compileBatch(pruneWord(fromUris, toEl.get()))) {
+        var eraseCode = pruneWord(fromUris, toEl.get());
+        try (var batch = compiler().compileBatch(eraseCode)) {
             var fromTreePaths = batch.references(toUri, toLine, toColumn);
             if (!fromTreePaths.isPresent()) return Optional.empty();
             var result = new ArrayList<Location>();
@@ -760,7 +763,7 @@ class JavaLanguageServer extends LanguageServer {
         var sources = new ArrayList<JavaFileObject>();
         for (var f : files) {
             var pruned = Parser.parseFile(f).prune(name);
-            sources.add(new SourceFileObject(f, pruned, Instant.now()));
+            sources.add(new SourceFileObject(f, pruned, Instant.EPOCH));
         }
         return sources;
     }
@@ -895,7 +898,8 @@ class JavaLanguageServer extends LanguageServer {
             return TOO_EXPENSIVE;
         }
         LOG.info(String.format("...compile %d files", fromUris.size()));
-        try (var batch = compiler().compileUris(fromUris)) {
+        var eraseCode = pruneWord(fromUris, toEl.get());
+        try (var batch = compiler().compileBatch(eraseCode)) {
             return batch.references(toUri, toLine, toColumn).map(List::size).orElse(0);
         }
     }
