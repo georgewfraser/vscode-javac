@@ -94,6 +94,7 @@ class JavaCompilerService {
     }
 
     CompileBatch compileUris(Collection<URI> uris) {
+        if (uris.isEmpty()) throw new RuntimeException("No source files");
         var files = new ArrayList<File>();
         for (var p : uris) files.add(new File(p));
         var sources = fileManager.getJavaFileObjectsFromFiles(files);
@@ -106,6 +107,7 @@ class JavaCompilerService {
         return new CompileBatch(this, sources);
     }
 
+    // TODO this belongs in Parser
     Set<URI> potentialDefinitions(Element to) {
         LOG.info(String.format("Find potential definitions of `%s`...", to));
 
@@ -119,7 +121,6 @@ class JavaCompilerService {
 
         if (to instanceof ExecutableElement) {
             var allFiles = possibleFiles(to);
-            // TODO this needs to use open text if available
             // Check if the file contains the name of `to`
             var hasWord = containsWord(allFiles, to);
             // Parse each file and check if the syntax tree is consistent with a definition of `to`
@@ -141,6 +142,7 @@ class JavaCompilerService {
         }
     }
 
+    // TODO this belongs in Parser
     Set<URI> potentialReferences(Element to) {
         LOG.info(String.format("Find potential references to `%s`...", to));
 
@@ -166,6 +168,7 @@ class JavaCompilerService {
             if (to instanceof TypeElement) {
                 hasWord = containsImport(hasWord, (TypeElement) to);
             }
+            LOG.info(String.format("...parse %d files", hasWord.size()));
             var matches = new HashSet<URI>();
             for (var file : hasWord) {
                 if (Parser.parseFile(file.toUri()).mightReference(to)) {
@@ -266,6 +269,13 @@ class JavaCompilerService {
         // Figure out all files that need to be re-scanned
         var outOfDate = new ArrayList<Path>();
         for (var file : allFiles) {
+            // If we know file doesn't contain a prefix of word, we know it doesn't contain the word
+            var prefix = name.substring(0, name.length() - 1);
+            if (!prefix.isEmpty() && cacheContainsWord.has(file, prefix) && !cacheContainsWord.get(file, prefix)) {
+                cacheContainsWord.load(file, name, false);
+                continue;
+            }
+            // Otherwise, scan the file in the next loop
             if (cacheContainsWord.needs(file, name)) {
                 outOfDate.add(file);
             }
@@ -274,7 +284,6 @@ class JavaCompilerService {
         // Update those files in cacheContainsWord
         LOG.info(String.format("...scanning %d out-of-date files for the word `%s`", outOfDate.size(), name));
         for (var file : outOfDate) {
-            // TODO this needs to use open text if available
             var found = StringSearch.containsWord(file, name);
             cacheContainsWord.load(file, name, found);
         }

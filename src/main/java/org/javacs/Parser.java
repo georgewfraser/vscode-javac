@@ -762,7 +762,6 @@ class Parser {
         var isType = to instanceof TypeElement;
         class Found extends RuntimeException {}
         if (isField || isType) {
-            LOG.info(String.format("...find identifiers named `%s`", findName));
             class FindId extends TreePathScanner<Void, Void> {
                 boolean method() {
                     var leaf = getCurrentPath().getLeaf();
@@ -799,7 +798,6 @@ class Parser {
             }
             return false;
         } else if (to instanceof ExecutableElement) {
-            LOG.info(String.format("...find method calls named `%s`", findName));
             class FindMethod extends TreePathScanner<Void, Void> {
                 boolean found = false;
 

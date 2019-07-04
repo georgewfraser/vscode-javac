@@ -41,6 +41,10 @@ class Cache<K, V> {
 
     private final Map<Key, Value> map = new HashMap<>();
 
+    boolean has(Path file, K k) {
+        return !needs(file, k);
+    }
+
     boolean needs(Path file, K k) {
         // If key is not in map, it needs to be loaded
         var key = new Key(file, k);

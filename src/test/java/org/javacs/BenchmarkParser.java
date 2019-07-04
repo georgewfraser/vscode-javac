@@ -3,7 +3,6 @@ package org.javacs;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import org.openjdk.jmh.annotations.*;
 
 @Warmup(iterations = 20, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -38,6 +37,4 @@ public class BenchmarkParser {
             Parser.parseFile(state.file.toUri());
         }
     }
-
-    private static final Logger LOG = Logger.getLogger("main");
 }

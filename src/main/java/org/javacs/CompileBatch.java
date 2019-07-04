@@ -263,18 +263,22 @@ public class CompileBatch implements AutoCloseable {
         return Optional.of(refs);
     }
 
-    public Optional<List<TreePath>> references(Element to) {
-        LOG.info(String.format("Search for references to %s...", to));
+    public Optional<List<TreePath>> references(URI toUri, int toLine, int toColumn) {
+        var to = element(toUri, toLine, toColumn);
+        if (to.isEmpty()) {
+            LOG.info(String.format("...no element at %s(%d, %d), giving up", toUri.getPath(), toLine, toColumn));
+            return Optional.empty();
+        }
 
         // If to is an error, we won't be able to find anything
-        if (to.asType().getKind() == TypeKind.ERROR) {
-            LOG.info(String.format("...`%s` is an error type, giving up", to.asType()));
+        if (to.get().asType().getKind() == TypeKind.ERROR) {
+            LOG.info(String.format("...`%s` is an error type, giving up", to.get().asType()));
             return Optional.empty();
         }
 
         // Otherwise, scan roots for references
         List<TreePath> list = new ArrayList<TreePath>();
-        var map = Map.of(to, list);
+        var map = Map.of(to.get(), list);
         var finder = new FindReferences(borrow.task);
         for (var r : roots) {
             // TODO jump to scan takes me to a specific method in this file, which is misleading. The actual
@@ -308,25 +312,6 @@ public class CompileBatch implements AutoCloseable {
             message.add(StringSearch.fileName(r.getSourceFile().toUri()));
         }
         throw new RuntimeException(file + " is not in " + message);
-    }
-
-    public Index index(URI from, List<Element> declarations) {
-        for (var r : roots) {
-            if (r.getSourceFile().toUri().equals(from)) {
-                return new Index(borrow.task, r, parent.diags, declarations);
-            }
-        }
-        throw new RuntimeException(from + " is not in compiled batch");
-    }
-
-    public List<Range> ranges(Collection<TreePath> paths) {
-        var result = new ArrayList<Range>();
-        for (var p : paths) {
-            var r = range(p);
-            if (r.isEmpty()) continue;
-            result.add(r.get());
-        }
-        return result;
     }
 
     public Optional<Range> range(TreePath path) {
