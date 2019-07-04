@@ -5,7 +5,6 @@ import com.sun.source.tree.*;
 import com.sun.source.util.*;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
@@ -681,12 +680,11 @@ class Parser {
 
     private static DocCommentTree makeEmptyDoc() {
         var file = new SourceFileObject(URI.create("file:///Foo.java"), "/** */ class Foo { }", Instant.now());
-        var fileManager = COMPILER.getStandardFileManager(Parser::ignoreError, null, Charset.defaultCharset());
         var task =
                 (JavacTask)
                         COMPILER.getTask(
                                 null,
-                                fileManager,
+                                FILE_MANAGER,
                                 Parser::ignoreError,
                                 List.of(),
                                 null,
