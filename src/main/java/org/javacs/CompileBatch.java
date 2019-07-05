@@ -269,13 +269,11 @@ public class CompileBatch implements AutoCloseable {
             LOG.info(String.format("...no element at %s(%d, %d), giving up", toUri.getPath(), toLine, toColumn));
             return Optional.empty();
         }
-
         // If to is an error, we won't be able to find anything
         if (to.get().asType().getKind() == TypeKind.ERROR) {
             LOG.info(String.format("...`%s` is an error type, giving up", to.get().asType()));
             return Optional.empty();
         }
-
         // Otherwise, scan roots for references
         List<TreePath> list = new ArrayList<TreePath>();
         var map = Map.of(to.get(), list);
@@ -285,7 +283,6 @@ public class CompileBatch implements AutoCloseable {
             // implementation is in the super of FindReferences.
             finder.scan(r, map);
         }
-        LOG.info(String.format("...found %d references", list.size()));
         return Optional.of(list);
     }
 

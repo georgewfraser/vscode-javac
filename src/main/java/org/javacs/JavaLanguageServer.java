@@ -741,13 +741,14 @@ class JavaLanguageServer extends LanguageServer {
         var eraseCode = pruneWord(fromUris, toEl.get());
         try (var batch = compiler().compileBatch(eraseCode)) {
             var fromTreePaths = batch.references(toUri, toLine, toColumn);
+            LOG.info(String.format("...found %d references", fromTreePaths.map(List::size).orElse(0)));
             if (!fromTreePaths.isPresent()) return Optional.empty();
             var result = new ArrayList<Location>();
             for (var path : fromTreePaths.get()) {
                 var fromUri = path.getCompilationUnit().getSourceFile().toUri();
                 var fromRange = batch.range(path);
                 if (!fromRange.isPresent()) {
-                    LOG.warning(String.format("Couldn't locate `%s`", path.getLeaf()));
+                    LOG.warning(String.format("...couldn't locate `%s`", path.getLeaf()));
                     continue;
                 }
                 var from = new Location(fromUri, fromRange.get());
@@ -867,24 +868,42 @@ class JavaLanguageServer extends LanguageServer {
         return unresolved;
     }
 
-    public static final int TOO_EXPENSIVE = 100;
+    // TODO consider caching more than 1 file
+    private Map<Ptr, Integer> cacheCountReferences = new HashMap<>();
+    private URI cacheCountReferencesFile = URI.create("file:///NONE");
+    private static final int TOO_EXPENSIVE = 100;
 
     private int countReferences(URI toUri, int toLine, int toColumn) {
+        if (!toUri.equals(cacheCountReferencesFile)) {
+            cacheCountReferences.clear();
+            cacheCountReferencesFile = toUri;
+        }
+        // Count within-file references
         Optional<Element> toEl;
         Ptr toPtr;
+        int count;
         try (var compile = compiler().compileFile(toUri)) {
             // Find the element we want to count references to
             toEl = compile.element(toUri, toLine, toColumn);
             if (!toEl.isPresent()) {
-                LOG.warning("...no element at code lens");
+                LOG.warning("No element at code lens!");
                 return -1;
             }
             toPtr = new Ptr(toEl.get());
+            count = compile.references(toUri, toLine, toColumn).map(List::size).orElse(0);
         }
-        LOG.info(String.format("Count references to `%s`...", toPtr));
+        // Check if we have the cross-file reference count in the cache
+        if (!cacheCountReferences.containsKey(toPtr)) {
+            var crossFile = countCrossFileReferences(toUri, toLine, toColumn, toEl.get(), toPtr);
+            cacheCountReferences.put(toPtr, crossFile);
+        }
+        return count + cacheCountReferences.get(toPtr);
+    }
+
+    private int countCrossFileReferences(URI toUri, int toLine, int toColumn, Element toEl, Ptr toPtr) {
         // Identify all files that *might* contain references to toEl
-        var fromUris = Parser.potentialReferences(toEl.get());
-        fromUris.add(toUri);
+        LOG.info(String.format("Count cross-file references to `%s`...", toPtr));
+        var fromUris = Parser.potentialReferences(toEl);
         // If there are 0 references, stop early
         if (fromUris.isEmpty()) {
             return 0;
@@ -897,10 +916,18 @@ class JavaLanguageServer extends LanguageServer {
                             fromUris.size()));
             return TOO_EXPENSIVE;
         }
+        fromUris.add(toUri);
         LOG.info(String.format("...compile %d files", fromUris.size()));
-        var eraseCode = pruneWord(fromUris, toEl.get());
+        var eraseCode = pruneWord(fromUris, toEl);
         try (var batch = compiler().compileBatch(eraseCode)) {
-            return batch.references(toUri, toLine, toColumn).map(List::size).orElse(0);
+            var count = 0;
+            for (var path : batch.references(toUri, toLine, toColumn).orElse(List.of())) {
+                if (!path.getCompilationUnit().getSourceFile().toUri().equals(toUri)) {
+                    count++;
+                }
+            }
+            LOG.info(String.format("...found %d cross-file references", count));
+            return count;
         }
     }
 
