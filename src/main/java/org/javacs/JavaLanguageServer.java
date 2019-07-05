@@ -760,7 +760,10 @@ class JavaLanguageServer extends LanguageServer {
 
     private List<JavaFileObject> pruneWord(Collection<URI> files, Element el) {
         var name = el.getSimpleName().toString();
-        if (name.equals("<init>")) name = el.getEnclosingElement().getSimpleName().toString();
+        if (name.equals("<init>")) {
+            name = el.getEnclosingElement().getSimpleName().toString();
+        }
+        LOG.info(String.format("...prune code that doesn't contain `%s`", name));
         var sources = new ArrayList<JavaFileObject>();
         for (var f : files) {
             var pruned = Parser.parseFile(f).prune(name);

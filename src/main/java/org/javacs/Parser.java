@@ -797,9 +797,14 @@ class Parser {
         return e.getSimpleName();
     }
 
-    private static String prune(CompilationUnitTree root, SourcePositions pos, StringBuilder buffer, long[] offsets) {
+    private static String prune(
+            CompilationUnitTree root,
+            SourcePositions pos,
+            StringBuilder buffer,
+            long[] offsets,
+            boolean eraseAfterCursor) {
         class Scan extends TreeScanner<Void, Void> {
-            boolean erasedAfterCursor = false;
+            boolean erasedAfterCursor = !eraseAfterCursor;
 
             boolean containsCursor(Tree node) {
                 var start = pos.getStartPosition(root, node);
@@ -919,7 +924,16 @@ class Parser {
 
         new Scan().scan(root, null);
 
-        return buffer.toString();
+        var pruned = buffer.toString();
+        // For debugging:
+        // var file = Paths.get(root.getSourceFile().toUri());
+        // var out = file.resolveSibling(file.getFileName() + ".pruned");
+        // try {
+        //     Files.writeString(out, pruned);
+        // } catch (IOException e) {
+        //     throw new RuntimeException(e);
+        // }
+        return pruned;
     }
 
     String prune(int line, int character) {
@@ -930,7 +944,7 @@ class Parser {
         var pos = Trees.instance(task).getSourcePositions();
         var contents = FileStore.contents(file);
         var buffer = new StringBuilder(contents);
-        return prune(root, pos, buffer, new long[] {cursor});
+        return prune(root, pos, buffer, new long[] {cursor}, true);
     }
 
     String prune(String name) {
@@ -950,7 +964,7 @@ class Parser {
         // Erase all blocks that don't contain name
         var buffer = new StringBuilder(contents);
         var pos = Trees.instance(task).getSourcePositions();
-        return prune(root, pos, buffer, offsets);
+        return prune(root, pos, buffer, offsets, false);
     }
 
     static Set<URI> potentialDefinitions(Element to) {
