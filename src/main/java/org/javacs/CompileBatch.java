@@ -24,8 +24,8 @@ import org.javacs.lsp.Position;
 import org.javacs.lsp.PublishDiagnosticsParams;
 import org.javacs.lsp.Range;
 
-public class CompileBatch implements AutoCloseable {
-    public static final int MAX_COMPLETION_ITEMS = 50;
+class CompileBatch implements AutoCloseable {
+    static final int MAX_COMPLETION_ITEMS = 50;
 
     private final JavaCompilerService parent;
     private final ReusableCompiler.Borrow borrow;
@@ -74,7 +74,7 @@ public class CompileBatch implements AutoCloseable {
                 sources);
     }
 
-    public CompilationUnitTree root(URI uri) {
+    CompilationUnitTree root(URI uri) {
         for (var root : roots) {
             if (root.getSourceFile().toUri().equals(uri)) {
                 return root;
@@ -96,7 +96,7 @@ public class CompileBatch implements AutoCloseable {
         }
     }
 
-    public Optional<Element> element(URI uri, int line, int character) {
+    Optional<Element> element(URI uri, int line, int character) {
         var path = findPath(uri, line, character);
         var el = trees.getElement(path);
         return Optional.ofNullable(el);
@@ -109,7 +109,7 @@ public class CompileBatch implements AutoCloseable {
         return true;
     }
 
-    public Collection<PublishDiagnosticsParams> reportErrors() {
+    Collection<PublishDiagnosticsParams> reportErrors() {
         // Construct empty lists
         var byUri = new HashMap<URI, PublishDiagnosticsParams>();
         for (var r : roots) {
@@ -204,7 +204,7 @@ public class CompileBatch implements AutoCloseable {
         return d;
     }
 
-    public Optional<List<TreePath>> definitions(Element el) {
+    Optional<List<TreePath>> definitions(Element el) {
         LOG.info(String.format("Search for definitions of `%s` in %d files...", el, roots.size()));
 
         if (el.asType().getKind() == TypeKind.ERROR) {
@@ -263,7 +263,7 @@ public class CompileBatch implements AutoCloseable {
         return Optional.of(refs);
     }
 
-    public Optional<List<TreePath>> references(URI toUri, int toLine, int toColumn) {
+    Optional<List<TreePath>> references(URI toUri, int toLine, int toColumn) {
         var to = element(toUri, toLine, toColumn);
         if (to.isEmpty()) {
             LOG.info(String.format("...no element at %s(%d, %d), giving up", toUri.getPath(), toLine, toColumn));
@@ -290,7 +290,7 @@ public class CompileBatch implements AutoCloseable {
      * Find all elements in `file` that get turned into code-lenses. This needs to match the result of
      * `Parser#declarations`
      */
-    public List<Element> declarations(URI file) {
+    List<Element> declarations(URI file) {
         for (var r : roots) {
             if (!r.getSourceFile().toUri().equals(file)) continue;
             var paths = Parser.declarations(r);
@@ -311,21 +311,21 @@ public class CompileBatch implements AutoCloseable {
         throw new RuntimeException(file + " is not in " + message);
     }
 
-    public Optional<Range> range(TreePath path) {
+    Optional<Range> range(TreePath path) {
         var uri = path.getCompilationUnit().getSourceFile().toUri();
         var contents = FileStore.contents(uri);
         return Parser.range(borrow.task, contents, path);
     }
 
-    public SourcePositions sourcePositions() {
+    SourcePositions sourcePositions() {
         return trees.getSourcePositions();
     }
 
-    public LineMap lineMap(URI uri) {
+    LineMap lineMap(URI uri) {
         return root(uri).getLineMap();
     }
 
-    public List<? extends ImportTree> imports(URI uri) {
+    List<? extends ImportTree> imports(URI uri) {
         return root(uri).getImports();
     }
 
@@ -360,7 +360,7 @@ public class CompileBatch implements AutoCloseable {
     }
 
     /** Find methods that override a method from a superclass but don't have an @Override annotation. */
-    public List<TreePath> needsOverrideAnnotation(URI uri) {
+    List<TreePath> needsOverrideAnnotation(URI uri) {
         LOG.info(String.format("Looking for methods that need an @Override annotation in %s ...", uri.getPath()));
 
         var root = root(uri);
@@ -390,7 +390,7 @@ public class CompileBatch implements AutoCloseable {
      * Figure out what imports this file should have. Star-imports like `import java.util.*` are converted to individual
      * class imports. Missing imports are inferred by looking at imports in other source files.
      */
-    public List<String> fixImports(URI uri) {
+    List<String> fixImports(URI uri) {
         var root = root(uri);
         var contents = contents(root);
         // Check diagnostics for missing imports
@@ -471,7 +471,7 @@ public class CompileBatch implements AutoCloseable {
     }
 
     /** Find all overloads for the smallest method call that includes the cursor */
-    public Optional<MethodInvocation> methodInvocation(URI file, int line, int character) {
+    Optional<MethodInvocation> methodInvocation(URI file, int line, int character) {
         LOG.info(String.format("Find method invocation around %s(%d,%d)...", file, line, character));
         var cursor = findPath(file, line, character);
         for (var path = cursor; path != null; path = path.getParentPath()) {
@@ -520,7 +520,7 @@ public class CompileBatch implements AutoCloseable {
         return Optional.empty();
     }
 
-    public List<Completion> completeIdentifiers(
+    List<Completion> completeIdentifiers(
             URI uri, int line, int character, boolean insideClass, boolean insideMethod, String partialName) {
         LOG.info(String.format("Completing identifiers starting with `%s`...", partialName));
 
@@ -561,7 +561,7 @@ public class CompileBatch implements AutoCloseable {
         return result;
     }
 
-    public List<Completion> completeAnnotations(URI uri, int line, int character, String partialName) {
+    List<Completion> completeAnnotations(URI uri, int line, int character, String partialName) {
         var result = new ArrayList<Completion>();
         // Add @Override ... snippet
         if ("Override".startsWith(partialName)) {
@@ -587,7 +587,7 @@ public class CompileBatch implements AutoCloseable {
     }
 
     /** Find all case options in the switch expression surrounding line:character */
-    public List<Completion> completeCases(URI uri, int line, int character) {
+    List<Completion> completeCases(URI uri, int line, int character) {
         var cursor = findPath(uri, line, character);
         LOG.info(String.format("Complete enum constants following `%s`...", cursor.getLeaf()));
 
@@ -621,7 +621,7 @@ public class CompileBatch implements AutoCloseable {
     }
 
     /** Find all members of expression ending at line:character */
-    public List<Completion> completeMembers(URI uri, int line, int character, boolean isReference) {
+    List<Completion> completeMembers(URI uri, int line, int character, boolean isReference) {
         var path = findPath(uri, line, character);
         var types = borrow.task.getTypes();
         var scope = trees.getScope(path);
@@ -742,7 +742,7 @@ public class CompileBatch implements AutoCloseable {
         }
     }
 
-    public static String[] TOP_LEVEL_KEYWORDS = {
+    static String[] TOP_LEVEL_KEYWORDS = {
         "package",
         "import",
         "public",
@@ -1093,7 +1093,7 @@ public class CompileBatch implements AutoCloseable {
                 // If file is in the same package, any class defined in the file is accessible
                 var otherPackageName = FileStore.packageName(file);
                 var samePackage = otherPackageName.equals(packageName) || otherPackageName.isEmpty();
-                // If file is in a different package, only a public class with the same name as the file is accessible
+                // If file is in a different package, only a class with the same name as the file is accessible
                 var maybePublic = StringSearch.matchesPartialName(file.getFileName().toString(), partialName);
                 if (samePackage || maybePublic) {
                     result.addAll(accessibleClasses(uri, file, partialName, packageName, classPathNames));
