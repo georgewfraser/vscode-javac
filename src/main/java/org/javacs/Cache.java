@@ -53,6 +53,7 @@ class Cache<K, V> {
         // If key was loaded before file was last modified, it needs to be reloaded
         var value = map.get(key);
         var modified = FileStore.modified(file);
+        // TODO remove all keys associated with file when file changes
         return value.created.isBefore(modified);
     }
 

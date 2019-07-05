@@ -868,16 +868,10 @@ class JavaLanguageServer extends LanguageServer {
         return unresolved;
     }
 
-    // TODO consider caching more than 1 file
-    private Map<Ptr, Integer> cacheCountReferences = new HashMap<>();
-    private URI cacheCountReferencesFile = URI.create("file:///NONE");
+    private Cache<Ptr, Integer> cacheCountReferences = new Cache<>();
     private static final int TOO_EXPENSIVE = 100;
 
     private int countReferences(URI toUri, int toLine, int toColumn) {
-        if (!toUri.equals(cacheCountReferencesFile)) {
-            cacheCountReferences.clear();
-            cacheCountReferencesFile = toUri;
-        }
         // Count within-file references
         Optional<Element> toEl;
         Ptr toPtr;
@@ -892,43 +886,57 @@ class JavaLanguageServer extends LanguageServer {
             toPtr = new Ptr(toEl.get());
             count = compile.references(toUri, toLine, toColumn).map(List::size).orElse(0);
         }
-        // Check if we have the cross-file reference count in the cache
-        if (!cacheCountReferences.containsKey(toPtr)) {
-            var crossFile = countCrossFileReferences(toUri, toLine, toColumn, toEl.get(), toPtr);
-            cacheCountReferences.put(toPtr, crossFile);
-        }
-        return count + cacheCountReferences.get(toPtr);
+        var crossFile = countCrossFileReferences(toUri, toLine, toColumn, toEl.get(), toPtr);
+        if (crossFile == TOO_EXPENSIVE) return TOO_EXPENSIVE;
+        return count + crossFile;
     }
 
     private int countCrossFileReferences(URI toUri, int toLine, int toColumn, Element toEl, Ptr toPtr) {
         // Identify all files that *might* contain references to toEl
         LOG.info(String.format("Count cross-file references to `%s`...", toPtr));
         var fromUris = Parser.potentialReferences(toEl);
-        // If there are 0 references, stop early
-        if (fromUris.isEmpty()) {
-            return 0;
-        }
+        fromUris.remove(toUri);
         // If it's too expensive to compute the code lens
-        if (fromUris.size() > 10) {
+        if (fromUris.size() > 100) {
             LOG.info(
                     String.format(
                             "...there are %d potential references, which is too expensive to compile",
                             fromUris.size()));
             return TOO_EXPENSIVE;
         }
-        fromUris.add(toUri);
-        LOG.info(String.format("...compile %d files", fromUris.size()));
-        var eraseCode = pruneWord(fromUris, toEl);
-        try (var batch = compiler().compileBatch(eraseCode)) {
-            var count = 0;
-            for (var path : batch.references(toUri, toLine, toColumn).orElse(List.of())) {
-                if (!path.getCompilationUnit().getSourceFile().toUri().equals(toUri)) {
-                    count++;
+        // Figure out what files need to be updated
+        var todo = new HashSet<URI>();
+        for (var fromUri : fromUris) {
+            if (cacheCountReferences.needs(Paths.get(fromUri), toPtr)) {
+                todo.add(fromUri);
+            }
+        }
+        // Update the cache
+        if (!todo.isEmpty()) {
+            todo.add(toUri);
+            LOG.info(String.format("...compile %d files", todo.size()));
+            var eraseCode = pruneWord(todo, toEl);
+            var countByFile = new HashMap<URI, Integer>();
+            try (var batch = compiler().compileBatch(eraseCode)) {
+                var fromPaths = batch.references(toUri, toLine, toColumn).orElse(List.of());
+                for (var fromPath : fromPaths) {
+                    var fromUri = fromPath.getCompilationUnit().getSourceFile().toUri();
+                    var newCount = countByFile.getOrDefault(fromUri, 0) + 1;
+                    countByFile.put(fromUri, newCount);
                 }
             }
-            LOG.info(String.format("...found %d cross-file references", count));
-            return count;
+            for (var fromUri : todo) {
+                var count = countByFile.getOrDefault(fromUri, 0);
+                cacheCountReferences.load(Paths.get(fromUri), toPtr, count);
+            }
+            LOG.info(String.format("...found cross-file references in %d files", countByFile.size()));
         }
+        // Sum up the count
+        var count = 0;
+        for (var fromUri : fromUris) {
+            count += cacheCountReferences.get(Paths.get(fromUri), toPtr);
+        }
+        return count;
     }
 
     @Override
