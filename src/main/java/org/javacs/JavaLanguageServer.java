@@ -927,6 +927,7 @@ class JavaLanguageServer extends LanguageServer {
             }
             for (var fromUri : todo) {
                 var count = countByFile.getOrDefault(fromUri, 0);
+                // TODO consider not caching if fromUri contains errors
                 cacheCountReferences.load(Paths.get(fromUri), toPtr, count);
             }
             LOG.info(String.format("...found cross-file references in %d files", countByFile.size()));
