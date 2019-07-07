@@ -264,11 +264,7 @@ class FileStore {
     }
 
     static BufferedReader lines(Path file) {
-        try {
-            return Files.newBufferedReader(file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return bufferedReader(file);
     }
 
     private static String patch(String sourceText, TextDocumentContentChangeEvent change) {
