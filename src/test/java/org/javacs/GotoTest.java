@@ -177,9 +177,13 @@ public class GotoTest {
 
     @Test
     public void packagePrivate() {
-        var suggestions = doGoto(file, 50, 42);
+        // There is a separate bug where javac doesn't find package-private classes in files with different names.
+        // This is tested in WarningsTest#referencePackagePrivateClassInFileWithDifferentName
+        var warmup = doGoto("/org/javacs/example/ContainsGotoPackagePrivate.java", 4, 29);
+        assertThat(warmup, not(empty()));
 
-        assertThat(suggestions, hasItem("GotoPackagePrivate.java:4"));
+        var suggestions = doGoto(file, 50, 42);
+        assertThat(suggestions, hasItem("ContainsGotoPackagePrivate.java:4"));
     }
 
     private static final JavaLanguageServer server = LanguageServerFixture.getJavaLanguageServer();

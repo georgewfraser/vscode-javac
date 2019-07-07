@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
@@ -315,6 +316,24 @@ class FileStore {
 
     static boolean isJavaFile(URI uri) {
         return uri.getScheme().equals("file") && isJavaFile(Paths.get(uri));
+    }
+
+    static Optional<Path> findDeclaringFile(String qualifiedName) {
+        var packageName = StringSearch.mostName(qualifiedName);
+        var className = StringSearch.lastName(qualifiedName);
+        // Fast path: look for text `class Foo` in file Foo.java
+        for (var f : list(packageName)) {
+            if (f.getFileName().toString().equals(className) && StringSearch.containsClass(f, className)) {
+                return Optional.of(f);
+            }
+        }
+        // Slow path: look for text `class Foo` in any file in package
+        for (var f : list(packageName)) {
+            if (StringSearch.containsClass(f, className)) {
+                return Optional.of(f);
+            }
+        }
+        return Optional.empty();
     }
 
     private static final Logger LOG = Logger.getLogger("main");

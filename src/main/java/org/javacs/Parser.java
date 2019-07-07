@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 import javax.lang.model.element.*;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
-import javax.tools.StandardLocation;
 import org.javacs.lsp.*;
 
 class Parser {
@@ -1090,14 +1089,7 @@ class Parser {
     /** Find the file `e` was declared in */
     private static Optional<URI> findDeclaringFile(TypeElement e) {
         var name = e.getQualifiedName().toString();
-        JavaFileObject file;
-        try {
-            file = FILE_MANAGER.getJavaFileForInput(StandardLocation.SOURCE_PATH, name, JavaFileObject.Kind.SOURCE);
-        } catch (IOException err) {
-            throw new RuntimeException(err);
-        }
-        if (file == null) return Optional.empty();
-        return Optional.of(file.toUri());
+        return FileStore.findDeclaringFile(name).map(Path::toUri);
     }
 
     private static Collection<Path> possibleFiles(Element to) {

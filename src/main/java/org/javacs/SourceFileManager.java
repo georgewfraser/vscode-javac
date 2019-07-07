@@ -69,14 +69,7 @@ class SourceFileManager extends ForwardingJavaFileManager<StandardJavaFileManage
             var simpleClassName = StringSearch.lastName(className);
             // First, look for ClassName.java
             for (var f : FileStore.list(packageName)) {
-                if (f.getFileName().toString().equals(simpleClassName + kind.extension)
-                        && StringSearch.containsClass(f, simpleClassName)) {
-                    return new SourceFileObject(f);
-                }
-            }
-            // Fall back on searching every file
-            for (var f : FileStore.list(packageName)) {
-                if (StringSearch.containsClass(f, simpleClassName)) {
+                if (f.getFileName().toString().equals(simpleClassName + kind.extension)) {
                     return new SourceFileObject(f);
                 }
             }

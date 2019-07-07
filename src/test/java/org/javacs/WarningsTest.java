@@ -42,6 +42,12 @@ public class WarningsTest {
         assertThat(errors, not(hasItem("unused(20)"))); // private Unused() { }
     }
 
+    @Test
+    public void referencePackagePrivateClassInFileWithDifferentName() {
+        server.lint(List.of(FindResource.uri("org/javacs/example/ReferenceGotoPackagePrivate.java")));
+        assertThat(errors, empty());
+    }
+
     // TODO warn on type.equals(otherType)
     // TODO warn on map.get(wrongKeyType)
 }
