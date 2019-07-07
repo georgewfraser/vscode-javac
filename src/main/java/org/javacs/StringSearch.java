@@ -249,6 +249,25 @@ class StringSearch {
         }
     }
 
+    static boolean containsString(Path java, String query) {
+        var search = new StringSearch(query);
+        if (FileStore.activeDocuments().contains(java)) {
+            var text = FileStore.contents(java).getBytes();
+            return search.next(text) != -1;
+        }
+        try (var channel = FileChannel.open(java)) {
+            // Read up to 1 MB of data from file
+            var limit = Math.min((int) channel.size(), SEARCH_BUFFER.capacity());
+            SEARCH_BUFFER.position(0);
+            SEARCH_BUFFER.limit(limit);
+            channel.read(SEARCH_BUFFER);
+            SEARCH_BUFFER.position(0);
+            return search.next(SEARCH_BUFFER) != -1;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Check if `candidate` contains all the characters of `find`, in-order, case-insensitive. Matches can be
      * discontinuous if the letters of `find` match the first letters of words in `candidate` For example, fb matches
@@ -300,6 +319,16 @@ class StringSearch {
 
     private static boolean isWordChar(char c) {
         return Character.isAlphabetic(c) || Character.isDigit(c) || c == '_' || c == '$';
+    }
+
+    static Cache<String, Boolean> cacheContainsClass = new Cache<>();
+
+    static boolean containsClass(Path file, String simpleName) {
+        if (cacheContainsClass.needs(file, simpleName)) {
+            cacheContainsClass.load(file, simpleName, containsString(file, "class " + simpleName));
+            // TODO verify this by actually parsing the file
+        }
+        return cacheContainsClass.get(file, simpleName);
     }
 
     static boolean containsImport(Path file, String toPackage, String toClass) {
