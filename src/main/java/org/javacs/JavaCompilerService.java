@@ -51,6 +51,7 @@ class JavaCompilerService {
         var list = new ArrayList<String>();
 
         Collections.addAll(list, "-classpath", joinPath(classPath));
+        Collections.addAll(list, "--add-modules", "ALL-MODULE-PATH");
         // Collections.addAll(list, "-verbose");
         Collections.addAll(list, "-proc:none");
         Collections.addAll(list, "-g");
