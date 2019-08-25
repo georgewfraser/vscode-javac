@@ -41,12 +41,23 @@ export function activate(context: ExtensionContext) {
         revealOutputChannelOn: 4 // never
     }
 
-    let launcherRelativePath = platformSpecificLangServer();
-    let launcherPath = [context.extensionPath].concat(launcherRelativePath);
-    let launcher = Path.resolve(...launcherPath);
-    
+    let launcher;
+    try {
+        let launcherRelativePath = platformSpecificLangServer();
+        let launcherPath = [context.extensionPath].concat(launcherRelativePath);
+        launcher = Path.resolve(...launcherPath);
+    } catch (e) {
+        if (e == "unsupported platform") {
+            // If platform is unsupported, fall back to using
+	    // the language server from PATH
+            launcher = "java-language-server"
+        } else {
+            throw e;
+        }
+    }
+
     console.log(launcher);
-    
+
     // Start the child java process
     let serverOptions: ServerOptions = {
         command: launcher,
@@ -283,7 +294,7 @@ function platformSpecificLangServer(): string[] {
             return ['dist', 'mac', 'bin', 'launcher'];
 	}
 
-	throw `unsupported platform: ${process.platform}`;
+	throw "unsupported platform";
 }
 
 // Alternative server options if you want to use visualvm
