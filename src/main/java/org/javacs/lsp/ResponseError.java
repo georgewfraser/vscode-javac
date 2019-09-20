@@ -1,15 +1,13 @@
 package org.javacs.lsp;
 
-import com.google.gson.JsonElement;
-
 public class ResponseError {
     public int code;
     public String message;
-    public JsonElement data;
+    public Object data;
 
     public ResponseError() {}
 
-    public ResponseError(int code, String message, JsonElement data) {
+    public ResponseError(int code, String message, Object data) {
         this.code = code;
         this.message = message;
         this.data = data;
