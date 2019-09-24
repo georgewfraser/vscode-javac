@@ -1,7 +1,6 @@
 package org.javacs.lsp;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import java.io.*;
 import java.nio.charset.Charset;
@@ -15,7 +14,6 @@ import java.util.logging.Logger;
 
 public class LSP {
     private static final Gson gson = new Gson();
-    private static final Gson gsonWithNulls = new GsonBuilder().serializeNulls().create();
 
     private static String readHeader(InputStream client) {
         var line = new StringBuilder();
@@ -104,30 +102,27 @@ public class LSP {
         }
     }
 
-    static String toJson(Object message, boolean serializeNulls) {
-        if (serializeNulls) {
-            return gsonWithNulls.toJson(message);
-        } else {
-            return gson.toJson(message);
-        }
-    }
-
     static String toJson(Object message) {
-        return toJson(message, false);
+        return gson.toJson(message);
     }
 
-    static void respond(OutputStream client, Integer id, Object result) {
-        ResponseMessage message = new ResponseMessage.Success(id, result);
-        writeClient(client, toJson(message, true));
+    static void respond(OutputStream client, int requestId, Object params) {
+        if (params instanceof ResponseError) {
+            throw new RuntimeException("Errors should be sent using LSP.error(...)");
+        }
+        if (params instanceof Optional) {
+            var option = (Optional) params;
+            params = option.orElse(null);
+        }
+        var jsonText = toJson(params);
+        var messageText = String.format("{\"jsonrpc\":\"2.0\",\"id\":%d,\"result\":%s}", requestId, jsonText);
+        writeClient(client, messageText);
     }
 
-    static void respondError(OutputStream client, Integer id, Integer code, String message) {
-      respondError(client, id, code, message, null);
-    }
-
-    static void respondError(OutputStream client, Integer id, Integer code, String text, Object data) {
-        ResponseMessage message = new ResponseMessage.Error(id, new ResponseError(code, text, data));
-        writeClient(client, toJson(message));
+    static void error(OutputStream client, int requestId, ResponseError error) {
+        var jsonText = toJson(error);
+        var messageText = String.format("{\"jsonrpc\":\"2.0\",\"id\":%d,\"error\":%s}", requestId, jsonText);
+        writeClient(client, messageText);
     }
 
     private static void notifyClient(OutputStream client, String method, Object params) {
@@ -452,7 +447,7 @@ public class LSP {
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, e.getMessage(), e);
                 if (r.id != null) {
-                    respondError(send, r.id, ErrorCodes.InternalError, e.getMessage());
+                    error(send, r.id, new ResponseError(ErrorCodes.InternalError, e.getMessage(), null));
                 }
             }
         }
