@@ -171,7 +171,15 @@ The java service process will output a log file to stderr, which is visible in V
 
 ### Installing
 
-If you have npm and maven installed, you should be able to install locally using 
+Before installing locally, you need to install prerequisites: npm, maven, protobuf. For example on Mac OS, you can install these using [Brew](https://brew.sh):
+
+    brew install npm maven protobuf
+
+You also need to have [Java 13](https://www.oracle.com/technetwork/java/javase/downloads/index.html) installed. Point the `JAVA_HOME` environment variable to it. For example, on Mac OS:
+
+    export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-13.0.1.jdk/Contents/Home/
+
+Assuming you have these prerequisites, you should be able to install locally using:
 
     npm install -g vsce
     npm install
