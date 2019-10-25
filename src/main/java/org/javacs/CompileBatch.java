@@ -297,26 +297,90 @@ class CompileBatch implements AutoCloseable {
         // If `file` contains errors, don't try to fix imports, it's too inaccurate
         var hasErrors = hasErrors(file);
         // Take the intersection of existing imports ^ existing identifiers
-        var qualifiedNames = new HashSet<String>();
+
+        var javaImports = new TreeSet<String>();
+        var javaxImports = new TreeSet<String>();
+        var comImports = new TreeSet<String>();
+        var orgImports = new TreeSet<String>();
+        var ioImports = new TreeSet<String>();
+        var customImports = new TreeSet<String>();
+
         for (var i : root.getImports()) {
             var imported = i.getQualifiedIdentifier().toString();
+            var isUsed = false;
             if (imported.endsWith(".*")) {
                 var packageName = StringSearch.mostName(imported);
-                var isUsed = hasErrors || finder.references.stream().anyMatch(r -> r.startsWith(packageName));
-                if (isUsed) qualifiedNames.add(imported);
+                if (hasErrors || finder.references.stream().anyMatch(r -> r.startsWith(packageName))) isUsed = true;
                 else LOG.warning("There are no references to package " + imported);
             } else {
-                if (hasErrors || finder.references.contains(imported)) qualifiedNames.add(imported);
+                if (hasErrors || finder.references.contains(imported)) isUsed = true;
                 else LOG.warning("There are no references to class " + imported);
             }
+
+            if (isUsed) {
+              switch (getPackageComponent(imported, 0)) {
+                case "java":
+                  javaImports.add(imported);
+                  break;
+
+                case "javax":
+                  javaxImports.add(imported);
+                  break;
+
+                case "com":
+                  comImports.add(imported);
+                  break;
+
+                case "org":
+                  orgImports.add(imported);
+                  break;
+
+                case "io":
+                  ioImports.add(imported);
+                  break;
+
+                default:
+                  customImports.add(imported);
+                  break;
+              }
+            }
         }
-        // Add qualified names from fixes
-        qualifiedNames.addAll(fixes.values());
-        // Sort in alphabetical order
-        var sorted = new ArrayList<String>();
-        sorted.addAll(qualifiedNames);
-        Collections.sort(sorted);
-        return sorted;
+
+        var imports = new ArrayList<String>();
+        addImportGroupToList(imports, javaImports, false);
+        addImportGroupToList(imports, javaxImports, false);
+        addImportGroupToList(imports, comImports, true);
+        addImportGroupToList(imports, ioImports, true);
+        addImportGroupToList(imports, orgImports, true);
+        addImportGroupToList(imports, customImports, true);
+        return imports;
+    }
+
+    private void addImportGroupToList(List<String> allImports, SortedSet<String> group, boolean splitFurther) {
+        if (group.isEmpty()) return;
+
+        if (!allImports.isEmpty()) allImports.add(null);
+        String lastAdded = null;
+        for (var i : group) {
+            if (splitFurther && lastAdded != null) {
+                if (!safeEquals(getPackageComponent(i, 1), getPackageComponent(lastAdded, 1))) {
+                    allImports.add(null);
+                }
+            }
+            allImports.add(i);
+            lastAdded = i;
+        }
+    }
+
+    private String getPackageComponent(String qualifiedName, int index) {
+        var split = qualifiedName.split("\\.");
+        return (index < split.length) ? split[index] : null;
+    }
+
+    private boolean safeEquals(String s1, String s2) {
+        if (s1 == null && s2 == null) return true;
+        if (s1 == null || s2 == null) return false;
+        return s1.equals(s2);
     }
 
     private boolean hasErrors(Path file) {

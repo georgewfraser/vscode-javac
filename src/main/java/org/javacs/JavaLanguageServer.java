@@ -1035,7 +1035,8 @@ class JavaLanguageServer extends LanguageServer {
         }
         // Insert each import
         for (var i : imports) {
-            insertText.append("import ").append(i).append(";\n");
+            if (i != null) insertText.append("import ").append(i).append(";");
+            insertText.append("\n");
         }
         var insertPosition = new Position((int) insertLine, 0);
         var insert = new TextEdit(new Range(insertPosition, insertPosition), insertText.toString());
