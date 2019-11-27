@@ -11,7 +11,7 @@ JAVA_HOME="./jdks/linux/jdk-13"
 rm -rf dist/linux
 $REAL_JAVA_HOME/bin/jlink \
   --module-path $JAVA_HOME/jmods \
-  --add-modules java.base,java.compiler,java.logging,java.sql,java.xml,jdk.compiler,jdk.jdi,jdk.unsupported,jdk.zipfs \
+  --add-modules java.base,java.compiler,java.logging,java.naming,java.sql,java.xml,jdk.compiler,jdk.jdi,jdk.unsupported,jdk.zipfs \
   --output dist/linux \
   --no-header-files \
   --no-man-pages \
