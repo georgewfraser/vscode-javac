@@ -23,6 +23,32 @@ A Java [language server](https://github.com/Microsoft/vscode-languageserver-prot
 
 Note: This tool is not compatible with [vim-lsp](https://github.com/prabirshrestha/vim-lsp) as it only supports LSPv2.0.
 
+### Sublime 3 (with LSP)
+
+- Checkout this repository
+- Run `./scripts/link_{linux|mac|windows}.sh`
+- Run `mvn package -DskipTests`
+- Open your Sublime 3
+- Install Package Control (if missing)
+- Install the [LSP Package](https://packagecontrol.io/packages/LSP) (if missing)
+- In Sublime, go to Preferences > Package Settings > LSP > Settings
+- Add this lines to your LSP Settings:
+  ```
+  {
+    "clients":
+    {
+        "jls":
+        {
+            "enabled": true,
+            "command": ["bash", "<path-to-java-language-server>/java-language-server/dist/lang_server_{linux|mac|windows}.sh"],
+            "scopes": ["source.java"],
+            "syntaxes": ["Packages/Java/Java.sublime-syntax"],
+            "languageId": "java"
+        }
+    }
+  }
+  ```
+
 ## [Issues](https://github.com/georgewfraser/java-language-server/issues)
 
 ## Features
