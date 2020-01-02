@@ -113,11 +113,6 @@ class CompileBatch implements AutoCloseable {
     private static List<String> options(Set<Path> classPath, Set<String> addExports) {
         var list = new ArrayList<String>();
 
-        var javaHome = System.getenv("JAVA_HOME");
-        if (javaHome != null) {
-            Collections.addAll(list, "--system", javaHome);
-        }
-
         Collections.addAll(list, "-classpath", joinPath(classPath));
         Collections.addAll(list, "--add-modules", "ALL-MODULE-PATH");
         // Collections.addAll(list, "-verbose");
