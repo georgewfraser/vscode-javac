@@ -627,6 +627,7 @@ public class CompletionProvider {
                 // Remove this if VSCode ever fixes https://github.com/microsoft/vscode/issues/78806
                 i.command = new Command();
                 i.command.command = "editor.action.triggerParameterHints";
+                i.command.title = "Trigger Parameter Hints";
             }
             i.insertTextFormat = 2; // Snippet
         }
