@@ -1,4 +1,4 @@
-package org.javacs;
+package org.javacs.config;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -20,7 +20,7 @@ public class InferConfigTest {
     @Test
     public void mavenClassPath() {
         assertThat(
-                both.classPath(),
+                both.classpath(),
                 contains(mavenHome.resolve("repository/com/external/external-library/1.2/external-library-1.2.jar")));
         // v1.1 should be ignored
     }
@@ -28,7 +28,7 @@ public class InferConfigTest {
     @Test
     public void gradleClasspath() {
         assertThat(
-                gradle.classPath(),
+                gradle.classpath(),
                 contains(
                         gradleHome.resolve(
                                 "caches/modules-2/files-2.1/com.external/external-library/1.2/xxx/external-library-1.2.jar")));
@@ -38,7 +38,7 @@ public class InferConfigTest {
     @Test
     public void mavenDocPath() {
         assertThat(
-                both.buildDocPath(),
+                both.sourcepath(),
                 contains(
                         mavenHome.resolve(
                                 "repository/com/external/external-library/1.2/external-library-1.2-sources.jar")));
@@ -48,7 +48,7 @@ public class InferConfigTest {
     @Test
     public void gradleDocPath() {
         assertThat(
-                gradle.buildDocPath(),
+                gradle.sourcepath(),
                 contains(
                         gradleHome.resolve(
                                 "caches/modules-2/files-2.1/com.external/external-library/1.2/yyy/external-library-1.2-sources.jar")));
@@ -63,14 +63,14 @@ public class InferConfigTest {
     @Test
     public void thisProjectClassPath() {
         assertThat(
-                thisProject.classPath(),
+                thisProject.classpath(),
                 hasItem(hasToString(endsWith(".m2/repository/junit/junit/4.12/junit-4.12.jar"))));
     }
 
     @Test
     public void thisProjectDocPath() {
         assertThat(
-                thisProject.buildDocPath(),
+                thisProject.sourcepath(),
                 hasItem(hasToString(endsWith(".m2/repository/junit/junit/4.12/junit-4.12-sources.jar"))));
     }
 

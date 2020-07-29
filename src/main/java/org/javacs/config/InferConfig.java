@@ -1,4 +1,4 @@
-package org.javacs;
+package org.javacs.config;
 
 import com.google.devtools.build.lib.analysis.AnalysisProtos;
 import java.io.File;
@@ -10,8 +10,9 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.javacs.Artifact;
 
-class InferConfig {
+public class InferConfig implements IConfig {
     private static final Logger LOG = Logger.getLogger("main");
 
     /** Root of the workspace that is currently open in VSCode */
@@ -23,18 +24,18 @@ class InferConfig {
     /** Location of the gradle cache, usually ~/.gradle */
     private final Path gradleHome;
 
-    InferConfig(Path workspaceRoot, Collection<String> externalDependencies, Path mavenHome, Path gradleHome) {
+    public InferConfig(Path workspaceRoot, Collection<String> externalDependencies, Path mavenHome, Path gradleHome) {
         this.workspaceRoot = workspaceRoot;
         this.externalDependencies = externalDependencies;
         this.mavenHome = mavenHome;
         this.gradleHome = gradleHome;
     }
 
-    InferConfig(Path workspaceRoot, Collection<String> externalDependencies) {
+    public InferConfig(Path workspaceRoot, Collection<String> externalDependencies) {
         this(workspaceRoot, externalDependencies, defaultMavenHome(), defaultGradleHome());
     }
 
-    InferConfig(Path workspaceRoot) {
+    public InferConfig(Path workspaceRoot) {
         this(workspaceRoot, Collections.emptySet(), defaultMavenHome(), defaultGradleHome());
     }
 
@@ -47,7 +48,7 @@ class InferConfig {
     }
 
     /** Find .jar files for external dependencies, for examples maven dependencies in ~/.m2 or jars in bazel-genfiles */
-    Set<Path> classPath() {
+    public Set<Path> classpath() {
         // externalDependencies
         if (!externalDependencies.isEmpty()) {
             var result = new HashSet<Path>();
@@ -88,7 +89,7 @@ class InferConfig {
     }
 
     /** Find source .jar files in local maven repository. */
-    Set<Path> buildDocPath() {
+    public Set<Path> sourcepath() {
         // externalDependencies
         if (!externalDependencies.isEmpty()) {
             var result = new HashSet<Path>();

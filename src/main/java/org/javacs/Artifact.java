@@ -2,8 +2,8 @@ package org.javacs;
 
 import java.util.Objects;
 
-class Artifact {
-    final String groupId, artifactId, version;
+public class Artifact {
+    public final String groupId, artifactId, version;
 
     Artifact(String groupId, String artifactId, String version) {
         this.groupId = groupId;
@@ -11,7 +11,7 @@ class Artifact {
         this.version = version;
     }
 
-    static Artifact parse(String id) {
+    public static Artifact parse(String id) {
         var parts = id.split(":");
         if (parts.length == 3) return new Artifact(parts[0], parts[1], parts[2]);
         else if (parts.length == 5) return new Artifact(parts[0], parts[1], parts[3]);

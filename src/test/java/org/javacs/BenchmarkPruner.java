@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.javacs.completion.PruneMethodBodies;
 import org.openjdk.jmh.annotations.*;
+import org.javacs.config.InferConfig;
 
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -22,7 +23,7 @@ public class BenchmarkPruner {
         public JavaCompilerService compiler = createCompiler();
 
         private SourceFileObject file(boolean prune) {
-            var file = Paths.get("src/main/java/org/javacs/InferConfig.java").normalize();
+            var file = Paths.get("src/main/java/org/javacs/config/InferConfig.java").normalize();
             if (prune) {
                 var task = compiler.parse(file);
                 var contents = new PruneMethodBodies(task.task).scan(task.root, 11222L).toString();
@@ -37,7 +38,7 @@ public class BenchmarkPruner {
 
             var workspaceRoot = Paths.get(".").normalize().toAbsolutePath();
             FileStore.setWorkspaceRoots(Set.of(workspaceRoot));
-            var classPath = new InferConfig(workspaceRoot).classPath();
+            var classPath = new InferConfig(workspaceRoot).classpath();
             return new JavaCompilerService(classPath, Collections.emptySet(), Collections.emptySet());
         }
     }

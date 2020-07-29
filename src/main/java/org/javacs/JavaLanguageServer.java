@@ -24,6 +24,8 @@ import org.javacs.markup.ErrorProvider;
 import org.javacs.navigation.DefinitionProvider;
 import org.javacs.navigation.ReferenceProvider;
 import org.javacs.rewrite.*;
+import org.javacs.config.Config;
+import org.javacs.config.IConfig;
 
 class JavaLanguageServer extends LanguageServer {
     // TODO allow multiple workspace roots
@@ -97,19 +99,23 @@ class JavaLanguageServer extends LanguageServer {
         if (!classPath.isEmpty()) {
             javaEndProgress();
             return new JavaCompilerService(classPath, Collections.emptySet(), addExports);
-        }
         // Otherwise, combine inference with user-specified external dependencies
-        else {
-            var infer = new InferConfig(workspaceRoot, externalDependencies);
+        } else {
+          IConfig config;
+          if (!settings.has("bazel")) {
+            config = Config.buildConfig(workspaceRoot, externalDependencies);
+          } else {
+            config = Config.buildBazelConfig(workspaceRoot, settings.get("bazel").getAsString());
+          }
 
-            javaReportProgress(new JavaReportProgressParams("Inferring class path"));
-            classPath = infer.classPath();
+          javaReportProgress(new JavaReportProgressParams("Inferring class path"));
+          classPath = config.classpath();
 
-            javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
-            var docPath = infer.buildDocPath();
+          javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
+          var docPath = config.sourcepath();
 
-            javaEndProgress();
-            return new JavaCompilerService(classPath, docPath, addExports);
+          javaEndProgress();
+          return new JavaCompilerService(classPath, docPath, addExports);
         }
     }
 
