@@ -12,7 +12,11 @@ public class Config {
   }
 
   public static BazelConfig buildBazelConfig(Path workspaceRoot, String binary) {
-    return BazelConfig.buildConfig(workspaceRoot, binary);
+    try {
+      return BazelConfig.buildConfig(workspaceRoot, binary);
+    } catch (Exception e) {
+      return null;
+    }
   }
 
 }
