@@ -47,7 +47,7 @@ public class Main {
             } else if ("--help".equals(arg)) {
               parsed.help = true;
             } else {
-              System.out.println("Unexpected argument '%s'".format(arg));
+              System.out.println(String.format("Unexpected argument '%s'", arg));
               System.out.println(help());
               System.exit(1);
             }
