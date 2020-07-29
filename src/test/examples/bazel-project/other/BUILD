@@ -1,9 +1,10 @@
 java_binary(
-    name = "main",
+    name = "other",
     srcs = glob(["src/**/*.java"]),
-    main_class = "Hello",
+    main_class = "Other",
     visibility = ["//visibility:public"],
     deps = [
-        "@maven//:com_google_guava_guava",
+        "@maven//:com_fasterxml_jackson_core_jackson_databind"
     ],
 )
+
