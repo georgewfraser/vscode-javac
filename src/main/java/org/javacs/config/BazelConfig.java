@@ -17,28 +17,48 @@ public class BazelConfig implements IConfig {
 
   private String binary;
   private Path workspaceRoot;
+  private String target;
+  private Path tmp;
 
   // Constructors
-  private BazelConfig(String binary, Path root) {
+  private BazelConfig(String binary, Path root, String target, Path tmp) {
     this.binary = binary;
     this.workspaceRoot = root;
+    this.target = target;
+    this.tmp = tmp;
   }
 
-  public static BazelConfig buildConfig(Path current){
+  public static BazelConfig buildConfig(Path current) throws IOException{
     return BazelConfig.buildConfig(current, "bazel");
   }
 
-  public static BazelConfig buildConfig(Path root, String binary){
+  public static BazelConfig buildConfig(Path current, String binary) throws IOException{
+    var tmp = Files.createTempDirectory("java-language-server-bazel");
+    var build = new LinkedList<String>();
+    var started = false;
+    Path workspace = current;
 
-    Path workspace = root;
-    for (var current = root; current != null; current = current.getParent()) {
-      if (Files.exists(current.resolve("WORKSPACE"))) {
+    for (var pointer = current; pointer != null; pointer = current.getParent()) {
+      LOG.info("Path " + pointer.toString());
+      if (!started && Files.exists(pointer.resolve("BUILD"))) {
+        started = true;
+      }
+      if (Files.exists(pointer.resolve("WORKSPACE"))) {
         workspace = current;
         break;
       }
+      if (started) {
+        build.addFirst(pointer.getFileName().toString());
+      }
     }
 
-    return new BazelConfig(binary, workspace);
+    String buildTarget = "";
+    if (build.size() > 0){
+       buildTarget = "//" + String.join("/", build) + "/";
+    }
+    buildTarget += "...";
+
+    return new BazelConfig(binary, workspace, buildTarget, tmp);
   }
 
   public Set<Path> classpath() {
@@ -78,7 +98,9 @@ public class BazelConfig implements IConfig {
       "--output=proto",
       "mnemonic("
         + filterMnemonic
-        + ", kind(java_library, ...) union kind(java_test, ...) union kind(java_binary, ...))"
+        + ", kind(java_library, " + target
+        + ") union kind(java_test, " + target +
+        ") union kind(java_binary, " + target + "))"
     };
     var output = fork(command);
     return readActionGraph(output, filterArgument);
@@ -87,7 +109,7 @@ public class BazelConfig implements IConfig {
   private Path fork(String[] command) {
     try {
       LOG.info("Running " + String.join(" ", command) + " ...");
-      var output = Files.createTempFile("java-language-server-bazel-output", ".proto");
+      var output = Files.createTempFile(tmp, "java-language-server-bazel-output", ".proto");
       var process =
         new ProcessBuilder()
         .command(command)
@@ -128,7 +150,8 @@ public class BazelConfig implements IConfig {
       }
       var artifactPaths = new HashSet<String>();
       for (var artifact : container.getArtifactsList()) {
-        if (!argumentPaths.contains(artifact.getExecPath())) {
+        var relative = artifact.getExecPath();
+        if (!argumentPaths.contains(relative)) {
           // artifact was not specified by --filterArgument
           continue;
         }
@@ -136,7 +159,6 @@ public class BazelConfig implements IConfig {
           // artifact is the output of another java action
           continue;
         }
-        var relative = artifact.getExecPath();
         LOG.info("...found bazel dependency " + relative);
         artifactPaths.add(relative);
       }
