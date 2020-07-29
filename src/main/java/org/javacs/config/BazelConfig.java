@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 
 public class BazelConfig implements IConfig {
   private static final Logger LOG = Logger.getLogger("main");
-  private static final Path NOT_FOUND = Paths.get("");
 
   private String binary;
   private Path workspaceRoot;
@@ -63,9 +62,6 @@ public class BazelConfig implements IConfig {
     // Run bazel as a subprocess
     String[] command = { binary, "info", "output_base" };
     var output = fork(command);
-    if (output == NOT_FOUND) {
-      return NOT_FOUND;
-    }
     // Read output
     try {
       var out = Files.readString(output).trim();
@@ -85,9 +81,6 @@ public class BazelConfig implements IConfig {
         + ", kind(java_library, ...) union kind(java_test, ...) union kind(java_binary, ...))"
     };
     var output = fork(command);
-    if (output == NOT_FOUND) {
-      return Set.of();
-    }
     return readActionGraph(output, filterArgument);
   }
 
