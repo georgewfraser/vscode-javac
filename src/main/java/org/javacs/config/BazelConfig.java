@@ -36,10 +36,9 @@ public class BazelConfig implements IConfig {
     var tmp = Files.createTempDirectory("java-language-server-bazel");
     var build = new LinkedList<String>();
     var started = false;
-    Path workspace = current;
+    Path workspace = null;
 
-    for (var pointer = current; pointer != null; pointer = current.getParent()) {
-      LOG.info("Path " + pointer.toString());
+    for (var pointer = current; pointer != null; pointer = pointer.getParent()) {
       if (!started && Files.exists(pointer.resolve("BUILD"))) {
         started = true;
       }
@@ -51,6 +50,12 @@ public class BazelConfig implements IConfig {
         build.addFirst(pointer.getFileName().toString());
       }
     }
+
+    if (workspace == null) {
+      // Couldn't find WORKSPACE file, probably not a bazel project
+      return null;
+    }
+
 
     String buildTarget = "";
     if (build.size() > 0){

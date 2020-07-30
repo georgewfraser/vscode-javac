@@ -92,7 +92,6 @@ class JavaLanguageServer extends LanguageServer {
         javaStartProgress(new JavaStartProgressParams("Configure javac"));
         javaReportProgress(new JavaReportProgressParams("Finding source roots"));
 
-        var externalDependencies = externalDependencies();
         var classPath = classPath();
         var addExports = addExports();
         // If classpath is specified by the user, don't infer anything
@@ -101,12 +100,7 @@ class JavaLanguageServer extends LanguageServer {
             return new JavaCompilerService(classPath, Collections.emptySet(), addExports);
         // Otherwise, combine inference with user-specified external dependencies
         } else {
-          IConfig config;
-          if (!settings.has("bazel")) {
-            config = Config.buildConfig(workspaceRoot, externalDependencies);
-          } else {
-            config = Config.buildBazelConfig(workspaceRoot, settings.get("bazel").getAsString());
-          }
+          IConfig config = Config.buildConfig(workspaceRoot, settings);
 
           javaReportProgress(new JavaReportProgressParams("Inferring class path"));
           classPath = config.classpath();
@@ -119,15 +113,6 @@ class JavaLanguageServer extends LanguageServer {
         }
     }
 
-    private Set<String> externalDependencies() {
-        if (!settings.has("externalDependencies")) return Set.of();
-        var array = settings.getAsJsonArray("externalDependencies");
-        var strings = new HashSet<String>();
-        for (var each : array) {
-            strings.add(each.getAsString());
-        }
-        return strings;
-    }
 
     private Set<Path> classPath() {
         if (!settings.has("classPath")) return Set.of();
