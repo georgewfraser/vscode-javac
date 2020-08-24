@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package demo; // Requried to generate valid code.
+
+option java_multiple_files = true;
+
+option go_package = "github.com/theothertomelliott/bazel-vscode-example/demo";
+
+message ZipCode {
+  string code = 1;
+}

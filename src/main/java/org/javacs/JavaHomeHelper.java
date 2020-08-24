@@ -80,9 +80,9 @@ class JavaHomeHelper {
             List<Path> list;
             try {
                 list = Files.list(Paths.get(root)).collect(Collectors.toList());
-            } catch(NoSuchFileException e) {
-				continue;
-			} catch (IOException e) {
+            } catch (NoSuchFileException e) {
+                continue;
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
             for (var jdk : list) {

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package demo; // Requried to generate valid code.
+
+option java_multiple_files = true;
+
+option go_package = "github.com/theothertomelliott/bazel-vscode-example/demo";
+
+// Always import protos with a full path relative to the WORKSPACE file.
+import "protos/address.proto";
+
+// Well known protos should be imported with full path relative to
+// @com_google_protobuf.
+import "google/protobuf/any.proto";
+
+message Person {
+  string name = 1;
+  int32 id = 2;
+  string email = 3;
+  Address address = 4;
+  google.protobuf.Any favorite_thing = 5;
+}

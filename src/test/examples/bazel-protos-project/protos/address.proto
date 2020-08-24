@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package demo; // Requried to generate valid code.
+
+option java_multiple_files = true;
+
+option go_package = "github.com/theothertomelliott/bazel-vscode-example/demo";
+
+// Always import protos with a full path relative to the WORKSPACE file.
+import "protos/zip_code.proto";
+
+message Address {
+  string city = 1;
+  ZipCode zip_code = 2;
+}
