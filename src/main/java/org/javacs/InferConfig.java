@@ -283,14 +283,30 @@ class InferConfig {
         }
     }
 
+    private String projectView(Path bazelWorkspaceRoot) {
+        Path projectFile = bazelWorkspaceRoot.resolve(".project");
+        String projectTargets = "...";
+        LOG.info("Searching for project file in " + projectFile.toString());
+        try {
+            if ( Files.exists(projectFile) ) {
+                projectTargets = String.join(" ", Files.readAllLines(projectFile));
+            }
+            LOG.info("Found projectTargets: " + projectTargets);
+        } catch (IOException exception) {
+        } finally {
+        }
+        return projectTargets;
+    }
+
     private Set<String> bazelAQuery(Path bazelWorkspaceRoot, String filterMnemonic, String filterArgument) {
+        String targets = projectView(bazelWorkspaceRoot);
         String[] command = {
             "bazel",
             "aquery",
             "--output=proto",
             "mnemonic("
                     + filterMnemonic
-                    + ", kind(java_library, ...) union kind(java_test, ...) union kind(java_binary, ...))"
+                    + String.format(", kind(java_library, set(%1$s)) union kind(java_test, set(%1$s)) union kind(java_binary, set(%1$s)))", targets)
         };
         var output = fork(bazelWorkspaceRoot, command);
         if (output == NOT_FOUND) {
@@ -341,7 +357,7 @@ class InferConfig {
 
     private static Path fork(Path workspaceRoot, String[] command) {
         try {
-            LOG.info("Running " + String.join(" ", command) + " ...");
+            LOG.info("Running " + String.join(" ", command) + "");
             var output = Files.createTempFile("java-language-server-bazel-output", ".proto");
             var process =
                     new ProcessBuilder()
