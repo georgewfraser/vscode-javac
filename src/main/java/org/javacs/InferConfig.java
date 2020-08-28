@@ -263,13 +263,18 @@ class InferConfig {
 
         // Add protos
         if (buildProtos(bazelWorkspaceRoot)) {
-            for (var relative : bazelAQuery(bazelWorkspaceRoot, "Javac", "--output", new String[]{"proto_library"})) {
+            for (var relative : bazelAQuery(bazelWorkspaceRoot, "Javac", "--output", new String[] {"proto_library"})) {
                 absolute.add(bazelWorkspaceRoot.resolve(relative));
             }
         }
 
         // Add rest of classpath
-        for (var relative : bazelAQuery(bazelWorkspaceRoot, "Javac", "--classpath", new String[]{"java_library", "java_test", "java_binary"})){
+        for (var relative :
+                bazelAQuery(
+                        bazelWorkspaceRoot,
+                        "Javac",
+                        "--classpath",
+                        new String[] {"java_library", "java_test", "java_binary"})) {
             absolute.add(bazelWorkspaceRoot.resolve(relative));
         }
         return absolute;
@@ -278,13 +283,19 @@ class InferConfig {
     private Set<Path> bazelSourcepath(Path bazelWorkspaceRoot) {
         var absolute = new HashSet<Path>();
         var outputBase = bazelOutputBase(bazelWorkspaceRoot);
-        for (var relative : bazelAQuery(bazelWorkspaceRoot, "JavaSourceJar", "--sources", new String[]{"java_library", "java_test", "java_binary"})) {
+        for (var relative :
+                bazelAQuery(
+                        bazelWorkspaceRoot,
+                        "JavaSourceJar",
+                        "--sources",
+                        new String[] {"java_library", "java_test", "java_binary"})) {
             absolute.add(outputBase.resolve(relative));
         }
 
         // Add proto source files
         if (buildProtos(bazelWorkspaceRoot)) {
-            for (var relative : bazelAQuery(bazelWorkspaceRoot, "Javac", "--source_jars", new String[]{"proto_library"})) {
+            for (var relative :
+                    bazelAQuery(bazelWorkspaceRoot, "Javac", "--source_jars", new String[] {"proto_library"})) {
                 absolute.add(bazelWorkspaceRoot.resolve(relative));
             }
         }
@@ -362,7 +373,8 @@ class InferConfig {
             "bazel",
             "aquery",
             "--output=proto",
-            "--include_aspects", // required for java_proto_library, see https://stackoverflow.com/questions/63430530/bazel-aquery-returns-no-action-information-for-java-proto-library
+            "--include_aspects", // required for java_proto_library, see
+                                 // https://stackoverflow.com/questions/63430530/bazel-aquery-returns-no-action-information-for-java-proto-library
             "mnemonic(" + filterMnemonic + ", " + kindUnion + ")"
         };
         var output = fork(bazelWorkspaceRoot, command);
