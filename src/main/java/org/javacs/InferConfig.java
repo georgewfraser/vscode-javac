@@ -418,9 +418,6 @@ class InferConfig {
                 LOG.info("...found bazel dependency " + relative);
                 artifactPaths.add(relative);
             }
-            for (var p : artifactPaths) {
-                LOG.info(p);
-            }
             return artifactPaths;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -429,7 +426,7 @@ class InferConfig {
 
     private static Path fork(Path workspaceRoot, String[] command) {
         try {
-            LOG.info("Running " + String.join(" ", command) + " in " + workspaceRoot.toAbsolutePath() + " ...");
+            LOG.info("Running " + String.join(" ", command) + " ...");
             var output = Files.createTempFile("java-language-server-bazel-output", ".proto");
             var process =
                     new ProcessBuilder()
