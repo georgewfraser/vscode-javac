@@ -367,6 +367,7 @@ class InferConfig {
             "--output=proto",
             "--include_aspects", // required for java_proto_library, see
             // https://stackoverflow.com/questions/63430530/bazel-aquery-returns-no-action-information-for-java-proto-library
+            "--allow_analysis_failures",
             "mnemonic(" + filterMnemonic + ", " + kindUnion + ")"
         };
         var output = fork(bazelWorkspaceRoot, command);
